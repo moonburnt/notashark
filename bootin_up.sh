@@ -18,31 +18,29 @@ botname="notashark.py"
 botpath="."
 scriptname=`basename "$0"`
 
-##-----------------------------------------
+################
 ## Script (DONT TOUCH THIS, unless you are 100% sure regarding what you are doing!)
-#Safety checks, to ensure that you actually provided the key
+################
+# Safety checks, to ensure that you actually provided envars
 if [ -z "$DISCORD_KEY" ]; then
     echo "DISCORD_KEY isnt set. Please edit the value of DISCORD_KEY inside $scriptname and try again"
     exit 1
 fi
 
 if [ -z "$STATISTICS_CHANNEL_ID" ]; then
-    echo "STATISTICS_CHANNEL_ID isnt set. Please edit the value of STATISTICS_CHANNEL_ID inside $scriptname and try again"
-    exit 1
+    echo "STATISTICS_CHANNEL_ID isnt set, some features will be unavailable"
 fi
 
 if [ -z "$LOG_CHANNEL_ID" ]; then
-    echo "LOG_CHANNEL_ID isnt set. Please edit the value of LOG_CHANNEL_ID inside $scriptname and try again"
-    exit 1
+    echo "LOG_CHANNEL_ID isnt set, some features will be unavailable"
 fi
 
-
-echo "Launching the $botname into the loop..."
+echo "Launching $botname into the loop..."
 export DISCORD_KEY
 export STATISTICS_CHANNEL_ID
 export LOG_CHANNEL_ID
 
-#Making bot run on the loop, so it will be brought back up even if some collapse will occur
+# Making bot run on the loop, so it will be brought back up even if some collapse will occur
 while true; do
     #python "$botpath/$botname" || exit 1
     python "$botpath/$botname"
