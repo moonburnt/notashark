@@ -9,13 +9,9 @@
 ### Dead-simple discord bot for King Arthur's Gold
 
 ### Patch Notes:
-## Fixed some typos
-## Added basic footer to statistics embed, featuring info about amount of time between updates
-## Added few safety checks here and there
-## Now keeping server's country in memory, which should drammatically reduce the amount of requests to geojs.io
+## Now keeping per-server's info in separate embed fields, which should drammatically improve the maximum allowed message size
 ################
 ### TODO:
-## for each server, make another embed's field (up to 25), instead of keeping everything inside description (should increase amount of info possible to show - from 2048 symbols per description to 6k per whole embed)
 ## add some indicators for spectators and password-protected servers
 
 import discord
@@ -103,31 +99,49 @@ async def on_ready():
 
             kag_servers.sort(key = sort_by_players, reverse = True)
 
+
+            embed_title = "There are currently {} active servers with {} players".format(servers_amount, players_amount)
+            embed_footer = "Statistics update each {} seconds".format(INFO_UPDATE_TIME)
+
+            embed = discord.Embed()
+
             if servers_amount == 0:
-                response_message = "Its dead, Jim :("
+                embed_description = "Its dead, Jim :("
             else:
-                response_message = "**Featuring:**"
+                embed_fields_amount = 0
+                embed_description = "**Featuring:**"
+                message_len = 0
+                message_len = len(embed_title)+len(embed_footer)+len(embed_description)
+                #print("message lengh is {}".format(message_len))
+
                 leftowers_counter = 0
                 for server in kag_servers:
-                    tempmsg = ""
-                    tempmsg += "\n**:flag_{}: {}**\n".format(server['country'], server['name'])
-                    tempmsg += "**Address:** <kag://{}:{}>\n".format(server['IPv4Address'], server['port'])
-                    tempmsg += "**Gamemode:** {}\n".format(server['gameMode'])
-                    tempmsg += "**Players:** {}/{}\n".format(len(server['playerList']), server['maxPlayers'])
-                    tempmsg += "**Currently Playing:** {}\n".format((', '.join(server['playerList'])))
-                    if (len(response_message)+len(tempmsg)) <= 1024:
-                        response_message += tempmsg
+                    if embed_fields_amount < 25:
+                        embed_fields_amount += 1
+
+                        field_title = "\n**:flag_{}: {}**\n".format(server['country'], server['name'])
+                        field_content = ""
+                        #field_content += "\n**:flag_{}: {}**\n".format(server['country'], server['name'])
+                        field_content += "**Address:** <kag://{}:{}>\n".format(server['IPv4Address'], server['port'])
+                        field_content += "**Gamemode:** {}\n".format(server['gameMode'])
+                        field_content += "**Players:** {}/{}\n".format(len(server['playerList']), server['maxPlayers'])
+                        field_content += "**Currently Playing:** {}\n".format((', '.join(server['playerList'])))
+                        if len(field_content) <= 1024 and (len(field_content)+len(field_title)+message_len < 6000):
+                            message_len += len(field_content)+len(field_title)
+                            #print("new message len is {}".format(message_len))
+                            embed.add_field(name = field_title[:256], value = field_content, inline=False)
+                        else:
+                            leftowers_counter += 1
                     else:
                         leftowers_counter += 1
 
                 if leftowers_counter > 0:
-                    response_message += "\n*And {} less populated servers*".format(leftowers_counter)
+                    embed.add_field(name = "\n*And {} less populated servers*".format(leftowers_counter), inline=False)
 
-            embed = discord.Embed()
-            embed.title = "There are currently {} active servers with {} players".format(servers_amount, players_amount)
+            embed.title = embed_title
             embed.colour = 0x3498DB
-            embed.description = response_message
-            embed.set_footer(text="Statistics update each {} seconds".format(INFO_UPDATE_TIME))
+            embed.description = embed_description
+            embed.set_footer(text=embed_footer)
 
             await message.edit(content=None, embed=embed)
             await sleep(INFO_UPDATE_TIME)
