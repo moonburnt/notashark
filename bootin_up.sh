@@ -10,6 +10,9 @@ DISCORD_KEY=""
 # If you did everything correctly - when you will click on channel's name with rmb, there will be new "Copy ID" entry
 STATISTICS_CHANNEL_ID=""
 
+# Change this to int value of seconds between update. Keep in mind that everything below 10 secs will be forcefully set to 10 seconds, as there is no point to fetch info any faster - you will just flood api with requests
+STATISTICS_UPDATE_TIME=""
+
 # Change its value to be id of channel, that will be used to greet newcomers and tell if someone has left the server
 LOG_CHANNEL_ID=""
 
@@ -35,10 +38,15 @@ if [ -z "$LOG_CHANNEL_ID" ]; then
     echo "LOG_CHANNEL_ID isnt set, some features will be unavailable"
 fi
 
+if [ -z "$STATISTICS_UPDATE_TIME" ]; then
+    echo "STATISTICS_UPDATE_TIME isnt set, will use defaults (30)"
+fi
+
 echo "Launching $botname into the loop..."
 export DISCORD_KEY
 export STATISTICS_CHANNEL_ID
 export LOG_CHANNEL_ID
+export STATISTICS_UPDATE_TIME
 
 # Making bot run on the loop, so it will be brought back up even if some collapse will occur
 while true; do
