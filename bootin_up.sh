@@ -16,10 +16,17 @@ STATISTICS_UPDATE_TIME=""
 # Change its value to be id of channel, that will be used to greet newcomers and tell if someone has left the server
 LOG_CHANNEL_ID=""
 
+# This determines logging level of script itself (dont confuse with log channel) - e.g which info will be displayed in terminal during notashark's uptime
+# Available values are the following:
+# "Debug". Display literally everything. For the most cases - overkill
+# "Info". Shows general usage info and errors, if they occur. Set by default
+# "Warning". Only display warnings and errors, nothing else. Use if you dont wanna flood your output
+SCRIPT_LOGGING_LEVEL="Info"
+
 # Stuff below reflects the name of bot script and path to it, aswell as the name of bootstrapper. By default, you dont need to change anything there
 botname="notashark.py"
 botpath="."
-scriptname=`basename "$0"`
+scriptname=$(basename "$0")
 
 ################
 ## Script (DONT TOUCH THIS, unless you are 100% sure regarding what you are doing!)
@@ -42,11 +49,16 @@ if [ -z "$STATISTICS_UPDATE_TIME" ]; then
     echo "STATISTICS_UPDATE_TIME isnt set, will use defaults (30)"
 fi
 
+if [ -z "$SCRIPT_LOGGING_LEVEL" ]; then
+    echo "SCRIPT_LOGGING_LEVEL isnt set, will use defaults (1)"
+fi
+
 echo "Launching $botname into the loop..."
 export DISCORD_KEY
 export STATISTICS_CHANNEL_ID
 export LOG_CHANNEL_ID
 export STATISTICS_UPDATE_TIME
+export SCRIPT_LOGGING_LEVEL
 
 # Making bot run on the loop, so it will be brought back up even if some collapse will occur
 while true; do
