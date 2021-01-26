@@ -42,15 +42,12 @@ class Data_Fetcher:
         link = "https://get.geojs.io/v1/ip/country/"+ip+".json"
         response = requests.get(link, timeout = 30)
         pydic = json.loads(response.text)
-        #raw_prefix = pydic['country']
-        #country_info = {}
-        #country_info['prefix'] = raw_prefix.lower()
-        #country_info['name'] = pydic['name']
         return pydic
 
     def _sort_by_players(self, x):
         '''Sort received list by len of ['players'] in its dictionaries'''
-        players = len(x['players'])
+        #this *kinda* seems to be borked, but I cant figure out why. Probably would be better to move it to related embeds handler?
+        players = len(x['nicknames'])
         return int(players)
 
     def _clean_server_info(self, raw_data):
@@ -66,7 +63,7 @@ class Data_Fetcher:
         if self.known_server_countries:
             for item in self.known_server_countries:
                 if item['ip'] == raw_data['IPv4Address']:
-                    data['country_prefix'] = item['country']
+                    data['country_prefix'] = item['country'].lower()
                     data['country_name'] = item['name']
                     log.debug(f"{raw_data['IPv4Address']}'s country is {data['country_name']}/{data['country_prefix']}, no need to fetch again!")
 
@@ -76,7 +73,7 @@ class Data_Fetcher:
             with self._countries_locker:
                 log.debug(f"Adding {country} to list of known countries")
                 self.known_server_countries.append(country)
-            data['country_prefix'] = country['country']
+            data['country_prefix'] = country['country'].lower()
             data['country_name'] = country['name']
         log.debug(f"Got country {data['country_name']}/{data['country_prefix']}")
 
