@@ -69,7 +69,7 @@ def single_server_embed(address):
     return embed, minimap
 
 #def serverlist_embed():
-    ''''''
+#    ''''''
 
 ## Code
 bot = commands.Bot(command_prefix="gib ")
