@@ -24,7 +24,7 @@ LOG_CHANNEL_ID=""
 SCRIPT_LOGGING_LEVEL="Info"
 
 # Stuff below reflects the name of bot script and path to it, aswell as the name of bootstrapper. By default, you dont need to change anything there
-botname="notashark.py"
+botname="run_notashark"
 botpath="."
 scriptname=$(basename "$0")
 
@@ -53,15 +53,12 @@ if [ -z "$SCRIPT_LOGGING_LEVEL" ]; then
     echo "SCRIPT_LOGGING_LEVEL isnt set, will use defaults (1)"
 fi
 
-echo "Launching $botname into the loop..."
+echo "Launching $botname..."
 export DISCORD_KEY
 export STATISTICS_CHANNEL_ID
 export LOG_CHANNEL_ID
 export STATISTICS_UPDATE_TIME
 export SCRIPT_LOGGING_LEVEL
 
-# Making bot run on the loop, so it will be brought back up even if some collapse will occur
-while true; do
-    #python "$botpath/$botname" || exit 1
-    python "$botpath/$botname"
-done
+chmod +x "$botpath/$botname"
+"$botpath/$botname"
