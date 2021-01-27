@@ -26,14 +26,13 @@ log = logging.getLogger(__name__)
 
 class Data_Fetcher:
     '''Class for all the functions related to obtaining data from kag api and preserving it for our needs'''
-    def __init__(self, stats_update_time=0):
+    def __init__(self):
         self.api = kag_api.KAG_API()
         self._servers_locker = threading.Lock() #locker for self.kag_servers to ensure there is no race condition happening
         self._countries_locker = threading.Lock() #locker for self.known_server_countries
         self.kag_servers = None
         self.known_server_countries = []
-        self.statistics_update_time = stats_update_time if (int(stats_update_time) > 0) else 10
-        log.debug(f"Fetching serverlist each {self.statistics_update_time} seconds")
+        self.statistics_update_time = 10 #this is default value, expected to be overriden by envar's shenanigans
         th = threading.Thread(target=self._serverlist_autoupdater) #do daemon=True
         th.start()
 
@@ -82,6 +81,8 @@ class Data_Fetcher:
         if raw_data['usingMods']:
             mode += " (modded)"
         data['mode'] = mode
+
+        data['private'] = raw_data['password']
 
         players_amount = len(raw_data['playerList'])
         players = f"{players_amount}/{raw_data['maxPlayers']}"

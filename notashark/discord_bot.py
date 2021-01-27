@@ -24,10 +24,11 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-BOT_NAME = ""
-STATISTICS_UPDATE_TIME = 0
+BOT_NAME = "notashark"
+BOT_PREFIX = "gib "
+STATISTICS_UPDATE_TIME = 10
 
-df = data_fetcher.Data_Fetcher(STATISTICS_UPDATE_TIME)
+df = data_fetcher.Data_Fetcher()
 
 def _sanitizer(raw_data):
     '''Receives dictionary with kag servers-related data. Sanitizing all necessary entries and returning it back'''
@@ -39,7 +40,10 @@ def _sanitizer(raw_data):
     data['description'] = discord.utils.escape_markdown(raw_data['description'])
     data['mode'] = discord.utils.escape_markdown(raw_data['mode'])
     data['players'] = raw_data['players']
-    data['link'] = raw_data['link']
+    if raw_data['private']:
+        data['link'] = f"{raw_data['link']} (private)"
+    else:
+        data['link'] = raw_data['link']
     if raw_data['nicknames']:
         data['nicknames'] = discord.utils.escape_markdown(raw_data['nicknames'])
     else:
@@ -124,14 +128,27 @@ def serverlist_embed():
 
     return embed
 
-bot = commands.Bot(command_prefix="gib ")
+async def status_updater():
+    '''Updates current bot's status'''
+    raw_data = df.kag_servers
+    if raw_data or (int(raw_data['total_players_amount']) > 0):
+        message = f"with {raw_data['total_players_amount']} peasants | {BOT_PREFIX}help"
+    else:
+        message = f"alone | {BOT_PREFIX}help"
+
+    await bot.change_presence(activity=discord.Game(name=message))
+
+bot = commands.Bot(command_prefix=BOT_PREFIX)
 #removing default help, coz its easier to make a new one than to rewrite a template
 bot.remove_command('help')
 
 @bot.event
 async def on_ready():
     log.info(f'Running {BOT_NAME} as {bot.user}!')
-
+    while True:
+        log.debug(f"Updating bot's status")
+        await status_updater()
+        await sleep(STATISTICS_UPDATE_TIME)
 
 @bot.event
 async def on_message(message):
@@ -147,7 +164,7 @@ async def on_message(message):
 @bot.command()
 async def info(ctx, *args):
     if not args:
-        await ctx.channel.send(f"This command requires server IP and port to work. Correct syntax be like: `gib info 8.8.8.8:80`")
+        await ctx.channel.send(f"This command requires server IP and port to work. Correct syntax be like: `{BOT_PREFIX}info 8.8.8.8:80`")
         log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
     else:
         server_address = args[0]
@@ -159,7 +176,6 @@ async def info(ctx, *args):
             log.info(f"{ctx.author} has asked for server info of {server_address}, but there is no such server")
         else:
             await ctx.channel.send(content=None, file=minimap, embed=infobox)
-            #await ctx.channel.send(content=None, embed=infobox)
             log.info(f"{ctx.author} has asked for server info of {server_address}. Responded")
 
 @bot.command()
@@ -177,18 +193,17 @@ async def serverlist(ctx):
 async def help(ctx):
     await ctx.channel.send(f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
     f"Currently there is but one custom command available:\n"
-    f"`gib info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"
+    f"`{BOT_PREFIX}info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"
     )
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
 
 ###
-def main(bot_token, bot_name, statistics_update_time):
+def main(bot_token, statistics_update_time):
     '''Running the damn thing'''
 
-    global BOT_NAME
-    BOT_NAME = bot_name
     global STATISTICS_UPDATE_TIME
     STATISTICS_UPDATE_TIME = statistics_update_time
+    df.statistics_update_time = STATISTICS_UPDATE_TIME
 
     try:
         bot.run(bot_token)

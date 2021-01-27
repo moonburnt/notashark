@@ -21,7 +21,6 @@ from os import environ
 from sys import exit
 import logging
 
-BOT_NAME = "notashark"
 DEFAULT_LOGGING_LEVEL = logging.INFO
 DEFAULT_STATISTICS_UPDATE_TIME = 10
 
@@ -51,15 +50,6 @@ except KeyError:
     log.critical("DISCORD_KEY environment variable isnt set. Edit bootin_up.sh accordingly, or set it up manually.\nAbort")
     exit(1)
 
-#to be removed and replaced with json-driven settings file configurable from within discord
-# try:
-    # STATISTICS_CHANNEL_ID = int(environ['STATISTICS_CHANNEL_ID'])
-# except:
-    # log.warning("STATISTICS_CHANNEL_ID isnt set, server stats wont be gathered")
-    # STATISTICS_CHANNEL_ID = None
-# else:
-    # log.info(f"STATISTICS_CHANNEL_ID has been set to {STATISTICS_CHANNEL_ID}")
-
 try:
     STATISTICS_UPDATE_TIME=int(environ['STATISTICS_UPDATE_TIME'])
 except:
@@ -70,4 +60,4 @@ else:
         STATISTICS_UPDATE_TIME = DEFAULT_STATISTICS_UPDATE_TIME
 log.info(f"STATISTICS_UPDATE_TIME has been set to {STATISTICS_UPDATE_TIME} seconds")
 
-discord_bot.main(BOT_TOKEN, BOT_NAME, STATISTICS_UPDATE_TIME)
+discord_bot.main(BOT_TOKEN, STATISTICS_UPDATE_TIME)
