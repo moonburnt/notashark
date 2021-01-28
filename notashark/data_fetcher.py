@@ -45,7 +45,7 @@ class Data_Fetcher:
 
     def _sort_by_players(self, x):
         '''Sort received list by len of ['players'] in its dictionaries'''
-        #this *kinda* seems to be borked, but I cant figure out why. Probably would be better to move it to related embeds handler?
+        #this may bork at times, but I cant figure out why. Probably would be better to move it to related embeds handler?
         players = len(x['nicknames'])
         return int(players)
 

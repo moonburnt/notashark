@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 BOT_NAME = "notashark"
 BOT_PREFIX = "!"
 STATISTICS_UPDATE_TIME = 10
-SETTINGS_AUTOSAVE_TIME = 60
+SETTINGS_AUTOSAVE_TIME = 600 #prolly too much. Also would benefit from being configurable as envar
 
 df = data_fetcher.Data_Fetcher()
 sf = settings_fetcher.Settings_Fetcher()
@@ -39,7 +39,10 @@ def _sanitizer(raw_data):
     data['name'] = discord.utils.escape_markdown(raw_data['name'])
     data['country_name'] = raw_data['country_name']
     data['country_prefix'] = raw_data['country_prefix']
-    data['description'] = discord.utils.escape_markdown(raw_data['description'])
+    if raw_data['description']:
+        data['description'] = discord.utils.escape_markdown(raw_data['description'])
+    else:
+        data['description'] = "This server has no description"
     data['mode'] = discord.utils.escape_markdown(raw_data['mode'])
     data['players'] = raw_data['players']
     if raw_data['private']:
@@ -157,6 +160,7 @@ async def serverlist_autoupdater():
             sf.settings_dictionary[item]['serverlist_message_id'] = message.id
 
 bot = commands.Bot(command_prefix=BOT_PREFIX)
+converter = commands.TextChannelConverter()
 #removing default help, coz its easier to make a new one than to rewrite a template
 bot.remove_command('help')
 
@@ -213,17 +217,26 @@ async def info(ctx, *args):
             log.info(f"{ctx.author} has asked for server info of {server_address}. Responded")
 
 @bot.command()
-async def set_autoupdate_channel(ctx):
-    #todo: pick a better name
-    try:
-        sf.settings_dictionary[str(ctx.guild.id)]['serverlist_channel_id'] = ctx.channel.id #its necessary to specify it as str, coz json cant into ints in keys
-        log.debug(f"#######################{sf.settings_dictionary}################")
-    except Exception as e:
-        await ctx.channel.send(f"Something went wrong...")
-        log.error(f"An unfortunate exception has occured while trying to set channel for autoupdates: {e}")
+async def set(ctx, *args):
+    admin_check = ctx.message.author.guild_permissions.administrator #ensuring that message's author is admin
+    if len(args) >= 3 and (args[0] == "autoupdate") and (args[1] == "channel") and admin_check: #this doesnt need to be multiline - other args will be checked only if first has matched, thus there should be no accident exceptions
+        try:
+            clink = args[2]
+            log.debug(f"Attempting to get ID of channel {clink}")
+            cid = await converter.convert(ctx, clink)
+            channel_id = cid.id
+            sf.settings_dictionary[str(ctx.guild.id)]['serverlist_channel_id'] = channel_id #its necessary to specify ctx.guild.id as str, coz json cant into ints in keys
+            #resettings message id, in case this channel has already been set for that purpose in past
+            sf.settings_dictionary[str(ctx.guild.id)]['serverlist_message_id'] = None
+            print(sf.settings_dictionary)
+        except Exception as e:
+            log.error(f"Got exception while trying to edit serverlist message: {e}")
+            await ctx.channel.send(f"Something went wrong... Please double-check syntax and try again")
+        else:
+            await ctx.channel.send(f"Successfully set {cid} as channel for autoupdates")
+            log.info(f"{ctx.author.id} tried to set {cid} as channel for autoupdates on {ctx.guild.id}/{ctx.channel.id}. Granted")
     else:
-        await ctx.channel.send(f"Set {ctx.channel} as channel for autoupdates")
-        log.info(f"{ctx.author.id} tried to set {ctx.channel.id} as channel for autoupdates on {ctx.guild.id}/{ctx.channel.id}. Responded")
+        await ctx.channel.send(f"Unable to process your request: please double-check syntax and your permissions on this guild")
 
 @bot.command()
 async def serverlist(ctx):
@@ -239,8 +252,10 @@ async def serverlist(ctx):
 @bot.command()
 async def help(ctx):
     await ctx.channel.send(f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
-    f"Currently there is but one custom command available:\n"
+    f"Currently there are following custom commands available:\n"
     f"`{BOT_PREFIX}info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"
+    f"`{BOT_PREFIX}serverlist` - will display list of active servers with their base info, aswell as total population statistics\n"
+    f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel to auto-fetch serverlist each {STATISTICS_UPDATE_TIME} seconds. You must be guild's admin to use it\n"
     )
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
 
