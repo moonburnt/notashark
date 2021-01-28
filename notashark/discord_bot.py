@@ -15,7 +15,7 @@
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
 import discord
-from notashark import data_fetcher
+from notashark import data_fetcher, settings_fetcher
 from asyncio import sleep
 import logging
 from discord.ext import commands
@@ -25,10 +25,12 @@ from datetime import datetime
 log = logging.getLogger(__name__)
 
 BOT_NAME = "notashark"
-BOT_PREFIX = "gib "
+BOT_PREFIX = "!"
 STATISTICS_UPDATE_TIME = 10
+SETTINGS_AUTOSAVE_TIME = 60
 
 df = data_fetcher.Data_Fetcher()
+sf = settings_fetcher.Settings_Fetcher()
 
 def _sanitizer(raw_data):
     '''Receives dictionary with kag servers-related data. Sanitizing all necessary entries and returning it back'''
@@ -83,25 +85,22 @@ def serverlist_embed():
     '''Returns list of all up and running kag servers. Meant to be used in loop and not as standalone command'''
     log.debug(f"Fetching data")
     raw_data = df.kag_servers
-    #todo: message if kag_servers is empty
 
     log.debug(f"Building embed")
     embed = discord.Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed_title = f"There are currently {raw_data['servers_amount']} active servers with {raw_data['total_players_amount']} players"
     embed_description = "**Featuring:**"
-    embed_footer=f"Statistics update each {STATISTICS_UPDATE_TIME} seconds"
 
     log.debug(f"Adding servers to message")
     embed_fields_amount = 0
-    message_len = len(embed_title)+len(embed_footer)+len(embed_description)
+    message_len = len(embed_title)+len(embed_description)
     leftowers_counter = 0
     for server in raw_data['servers']:
         if embed_fields_amount < 25:
             embed_fields_amount += 1
             data = _sanitizer(server)
 
-            #I just realized that I miss field for password-protected servers, lol #TODO
             field_title = f"\n**:flag_{data['country_prefix']}: {data['name']}**"
             field_content = ""
             field_content += f"\n**Address:** {data['link']}"
@@ -124,12 +123,12 @@ def serverlist_embed():
 
     embed.title = embed_title
     embed.description = embed_description
-    embed.set_footer(text=embed_footer)
 
     return embed
 
 async def status_updater():
     '''Updates current bot's status'''
+    #this throws exception if ran "right away", while kag_servers hasnt been populated yet
     raw_data = df.kag_servers
     if raw_data or (int(raw_data['total_players_amount']) > 0):
         message = f"with {raw_data['total_players_amount']} peasants | {BOT_PREFIX}help"
@@ -138,6 +137,25 @@ async def status_updater():
 
     await bot.change_presence(activity=discord.Game(name=message))
 
+async def serverlist_autoupdater():
+    '''Automatically update serverlist for all matching servers. Expects sf.settings_dictionary to exist and have items inside'''
+    for item in sf.settings_dictionary:
+        #doing this way, in case original message got wiped. Prolly need to catch some expected exceptions to dont log them
+        try:
+            channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id']) #this expects int, but it should be tis way anyway, so dont writing it specially
+            message_id = sf.settings_dictionary[item]['serverlist_message_id']
+            message = await channel.fetch_message(message_id)
+            infobox = serverlist_embed()
+            await message.edit(content=None, embed=infobox)
+
+        except Exception as e:
+            #this may be faulty if some gibberish has got into settings dictionary. But it shouldnt get there, so I dont care
+            log.error(f"Got exception while trying to edit serverlist message: {e}")
+            channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
+            message = await channel.send("Gathering the data...")
+            log.info(f"Sent placeholder serverlist msg to {item}/{channel.id}")
+            sf.settings_dictionary[item]['serverlist_message_id'] = message.id
+
 bot = commands.Bot(command_prefix=BOT_PREFIX)
 #removing default help, coz its easier to make a new one than to rewrite a template
 bot.remove_command('help')
@@ -145,10 +163,26 @@ bot.remove_command('help')
 @bot.event
 async def on_ready():
     log.info(f'Running {BOT_NAME} as {bot.user}!')
+
+    settings_file_update_timer = 0 #this is but nasty hack, but Im not doing multithreading for just that
     while True:
+        settings_file_update_timer += STATISTICS_UPDATE_TIME
+        await sleep(STATISTICS_UPDATE_TIME) #sleeping before task to let statistics update
+        log.debug(f"Updating serverlists")
+        await serverlist_autoupdater()
         log.debug(f"Updating bot's status")
         await status_updater()
-        await sleep(STATISTICS_UPDATE_TIME)
+
+        if settings_file_update_timer >= SETTINGS_AUTOSAVE_TIME:
+            settings_file_update_timer = 0
+            log.debug(f"Overwriting settings")
+            sf.settings_saver()
+
+@bot.event
+async def on_guild_available(ctx):
+    log.info(f"Connected to guild {ctx.id}")
+    log.debug(f"Checking if bot knows about this guild")
+    sf.settings_checker(ctx.id) #mybe rewrite this? idk
 
 @bot.event
 async def on_message(message):
@@ -177,6 +211,19 @@ async def info(ctx, *args):
         else:
             await ctx.channel.send(content=None, file=minimap, embed=infobox)
             log.info(f"{ctx.author} has asked for server info of {server_address}. Responded")
+
+@bot.command()
+async def set_autoupdate_channel(ctx):
+    #todo: pick a better name
+    try:
+        sf.settings_dictionary[str(ctx.guild.id)]['serverlist_channel_id'] = ctx.channel.id #its necessary to specify it as str, coz json cant into ints in keys
+        log.debug(f"#######################{sf.settings_dictionary}################")
+    except Exception as e:
+        await ctx.channel.send(f"Something went wrong...")
+        log.error(f"An unfortunate exception has occured while trying to set channel for autoupdates: {e}")
+    else:
+        await ctx.channel.send(f"Set {ctx.channel} as channel for autoupdates")
+        log.info(f"{ctx.author.id} tried to set {ctx.channel.id} as channel for autoupdates on {ctx.guild.id}/{ctx.channel.id}. Responded")
 
 @bot.command()
 async def serverlist(ctx):
