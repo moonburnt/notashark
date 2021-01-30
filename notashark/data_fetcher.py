@@ -14,7 +14,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
-from pykagapi import kag_api
+from pykagapi import kag
 import logging
 from time import sleep
 import threading
@@ -27,7 +27,6 @@ log = logging.getLogger(__name__)
 class Data_Fetcher:
     '''Class for all the functions related to obtaining data from kag api and preserving it for our needs'''
     def __init__(self):
-        self.api = kag_api.KAG_API()
         self._servers_locker = threading.Lock() #locker for self.kag_servers to ensure there is no race condition happening
         self._countries_locker = threading.Lock() #locker for self.known_server_countries
         self.kag_servers = None
@@ -98,14 +97,14 @@ class Data_Fetcher:
     def single_server_fetcher(self, ip, port):
         '''Receives str/int for ip and port, returns dictionary with server's info'''
         log.debug(f'Fetching detailed info for server with address {ip}:{port} from kag api')
-        raw_data = self.api.get_server_status(ip, port)
+        raw_data = kag.server.status(ip, port)
 
         log.debug(f"Got the following raw info: {raw_data}")
         log.debug(f"Cleaning up")
         data = self._clean_server_info(raw_data)
 
         log.debug(f"Fetching minimap")
-        data['minimap'] = self.api.get_server_minimap(ip, port)
+        data['minimap'] = kag.server.minimap(ip, port)
 
         log.debug(f"Got following data: {data}")
 
@@ -114,7 +113,7 @@ class Data_Fetcher:
     def serverlist_fetcher(self):
         '''Fetching raw list of alive kag servers and returning it'''
         log.debug(f'Fetching serverlist from kag api')
-        raw_data = self.api.get_active_servers()
+        raw_data = kag.servers.active()
 
         data = {}
         log.debug(f"Calculating amount of servers")
