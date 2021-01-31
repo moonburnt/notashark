@@ -260,13 +260,8 @@ async def help(ctx):
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
 
 ###
-def main(bot_token, statistics_update_time):
+def main(bot_token):
     '''Running the damn thing'''
-
-    global STATISTICS_UPDATE_TIME
-    STATISTICS_UPDATE_TIME = statistics_update_time
-    df.statistics_update_time = STATISTICS_UPDATE_TIME
-
     try:
         bot.run(bot_token)
     except discord.errors.LoginFailure:

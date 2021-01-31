@@ -24,6 +24,8 @@ from re import sub
 
 log = logging.getLogger(__name__)
 
+STATISTICS_UPDATE_TIME = 10
+
 class Data_Fetcher:
     '''Class for all the functions related to obtaining data from kag api and preserving it for our needs'''
     def __init__(self):
@@ -31,7 +33,6 @@ class Data_Fetcher:
         self._countries_locker = threading.Lock() #locker for self.known_server_countries
         self.kag_servers = None
         self.known_server_countries = []
-        self.statistics_update_time = 10 #this is default value, expected to be overriden by envar's shenanigans
         th = threading.Thread(target=self._serverlist_autoupdater) #do daemon=True
         th.start()
 
@@ -147,5 +148,5 @@ class Data_Fetcher:
                 log.debug(f"Updating self.kag_servers")
                 self.kag_servers = servers
             log.debug(f"Successfully updated self.kag_servers")
-            log.debug(f"Awaiting {self.statistics_update_time} seconds to update self.kag_servers")
-            sleep(self.statistics_update_time)
+            log.debug(f"Awaiting {STATISTICS_UPDATE_TIME} seconds to update self.kag_servers")
+            sleep(STATISTICS_UPDATE_TIME)

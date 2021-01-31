@@ -16,7 +16,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
-from notashark import discord_bot
+import notashark
 from os import environ
 from sys import exit
 import logging
@@ -60,4 +60,6 @@ else:
         STATISTICS_UPDATE_TIME = DEFAULT_STATISTICS_UPDATE_TIME
 log.info(f"STATISTICS_UPDATE_TIME has been set to {STATISTICS_UPDATE_TIME} seconds")
 
-discord_bot.main(BOT_TOKEN, STATISTICS_UPDATE_TIME)
+notashark.discord_bot.STATISTICS_UPDATE_TIME = STATISTICS_UPDATE_TIME
+notashark.data_fetcher.STATISTICS_UPDATE_TIME = STATISTICS_UPDATE_TIME
+notashark.discord_bot.main(BOT_TOKEN)
