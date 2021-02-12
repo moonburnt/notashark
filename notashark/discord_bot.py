@@ -31,30 +31,21 @@ BOT_PREFIX = configuration.BOT_PREFIX
 SERVERLIST_UPDATE_TIME = configuration.SERVERLIST_UPDATE_TIME
 SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
-df = data_fetcher.Data_Fetcher()
 sf = settings_fetcher.Settings_Fetcher()
 
 def _sanitizer(raw_data):
     '''Receives dictionary with kag servers-related data. Sanitizing all necessary entries and returning it back'''
     log.debug(f"Sanitizing stuff, to avoid weird markdown-related things from happening")
+    #todo: remake this into content-agnostic filter
     data = {}
     data['name'] = discord.utils.escape_markdown(raw_data['name'])
     data['country_name'] = raw_data['country_name']
     data['country_prefix'] = raw_data['country_prefix']
-    if raw_data['description']:
-        data['description'] = discord.utils.escape_markdown(raw_data['description'])
-    else:
-        data['description'] = "This server has no description"
+    data['description'] = discord.utils.escape_markdown(raw_data['description'])
     data['mode'] = discord.utils.escape_markdown(raw_data['mode'])
     data['players'] = raw_data['players']
-    if raw_data['private']:
-        data['link'] = f"{raw_data['link']} (private)"
-    else:
-        data['link'] = raw_data['link']
-    if raw_data['nicknames']:
-        data['nicknames'] = discord.utils.escape_markdown(raw_data['nicknames'])
-    else:
-        data['nicknames'] = "There are currently no players on this server"
+    data['link'] = raw_data['link']
+    data['nicknames'] = raw_data['nicknames']
 
     return data
 
@@ -62,7 +53,7 @@ def single_server_embed(address):
     '''Receives str(ip:port), returns embed with server's info, aswell as minimap file to attach to message'''
     log.debug(f"Preparing embed for info of server with address {address}")
     ip, port = address.split(":")
-    raw_data = df.single_server_fetcher(ip, port)
+    raw_data = data_fetcher.single_server_fetcher(ip, port)
 
     log.debug(f"Getting minimap")
     mm = BytesIO(raw_data['minimap'])
@@ -89,7 +80,7 @@ def single_server_embed(address):
 def serverlist_embed():
     '''Returns list of all up and running kag servers. Meant to be used in loop and not as standalone command'''
     log.debug(f"Fetching data")
-    raw_data = df.kag_servers
+    raw_data = data_fetcher.kag_servers
 
     log.debug(f"Building embed")
     embed = discord.Embed(timestamp=datetime.utcnow())
@@ -134,8 +125,9 @@ def serverlist_embed():
 async def status_updater():
     '''Updates current bot's status'''
     #this throws exception if ran "right away", while kag_servers hasnt been populated yet
-    raw_data = df.kag_servers
-    if raw_data or (int(raw_data['total_players_amount']) > 0):
+    raw_data = data_fetcher.kag_servers
+    print(raw_data)
+    if raw_data and (int(raw_data['total_players_amount']) > 0):
         message = f"with {raw_data['total_players_amount']} peasants | {BOT_PREFIX}help"
     else:
         message = f"alone | {BOT_PREFIX}help"
@@ -147,14 +139,16 @@ async def serverlist_autoupdater():
     for item in sf.settings_dictionary:
         #doing this way, in case original message got wiped. Prolly need to catch some expected exceptions to dont log them
         try:
-            channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id']) #this expects int, but it should be tis way anyway, so dont writing it specially
+            #future reminder: serverlist_channel_id should always be int
+            channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
             message_id = sf.settings_dictionary[item]['serverlist_message_id']
             message = await channel.fetch_message(message_id)
             infobox = serverlist_embed()
             await message.edit(content=None, embed=infobox)
 
         except Exception as e:
-            #this may be faulty if some gibberish has got into settings dictionary. But it shouldnt get there, so I dont care
+            #this may be faulty if some gibberish has got into settings dictionary
+            #but it shouldnt get there... I guess
             log.error(f"Got exception while trying to edit serverlist message: {e}")
             channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
             message = await channel.send("Gathering the data...")
@@ -170,7 +164,9 @@ bot.remove_command('help')
 async def on_ready():
     log.info(f'Running {BOT_NAME} as {bot.user}!')
 
-    settings_file_update_timer = 0 #this is but nasty hack, but Im not doing multithreading for just that
+    #instead of this hack, I should probably make proper module for threading stuff
+    #and operate both this and serverlist autoupdater from that thing
+    settings_file_update_timer = 0
     while True:
         settings_file_update_timer += SERVERLIST_UPDATE_TIME
         await sleep(SERVERLIST_UPDATE_TIME) #sleeping before task to let statistics update
@@ -179,6 +175,8 @@ async def on_ready():
         log.debug(f"Updating bot's status")
         await status_updater()
 
+        #also I really got tired of this not overwritig settings often enough
+        #maybe I should make it also do so on keyboard interrupt?
         if settings_file_update_timer >= SETTINGS_AUTOSAVE_TIME:
             settings_file_update_timer = 0
             log.debug(f"Overwriting settings")
@@ -206,17 +204,17 @@ async def info(ctx, *args):
     if not args:
         await ctx.channel.send(f"This command requires server IP and port to work. Correct syntax be like: `{BOT_PREFIX}info 8.8.8.8:80`")
         log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
-    else:
-        server_address = args[0]
+        return
 
-        try:
-            infobox, minimap = single_server_embed(server_address)
-        except:
-            await ctx.channel.send(f"Couldnt find `{server_address}`. Are you sure the address is correct and server is up and running?")
-            log.info(f"{ctx.author} has asked for server info of {server_address}, but there is no such server")
-        else:
-            await ctx.channel.send(content=None, file=minimap, embed=infobox)
-            log.info(f"{ctx.author} has asked for server info of {server_address}. Responded")
+    server_address = args[0]
+    try:
+        infobox, minimap = single_server_embed(server_address)
+    except:
+        await ctx.channel.send(f"Couldnt find `{server_address}`. Are you sure the address is correct and server is up and running?")
+        log.info(f"{ctx.author} has asked for server info of {server_address}, but there is no such server")
+    else:
+        await ctx.channel.send(content=None, file=minimap, embed=infobox)
+        log.info(f"{ctx.author} has asked for server info of {server_address}. Responded")
 
 @bot.command()
 async def set(ctx, *args):
@@ -253,6 +251,7 @@ async def serverlist(ctx):
 
 @bot.command()
 async def help(ctx):
+    #I should probably remake this into embed, at some point
     await ctx.channel.send(f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
     f"Currently there are following custom commands available:\n"
     f"`{BOT_PREFIX}info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"

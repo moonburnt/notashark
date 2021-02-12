@@ -56,6 +56,7 @@ if args.settings_autosave_time and (args.settings_autosave_time > DEFAULT_SETTIN
 log.info(f"Settings autosave time has been set to {notashark.configuration.SETTINGS_AUTOSAVE_TIME} seconds")
 
 log.debug(f"Launching {BOT_NAME}")
+notashark.data_fetcher.th.start()
 try:
     notashark.discord_bot.bot.run(BOT_TOKEN)
 except discord.errors.LoginFailure:
