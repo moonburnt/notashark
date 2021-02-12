@@ -16,12 +16,15 @@
 
 import logging
 import json
+from notashark import configuration
 
 log = logging.getLogger(__name__)
 
+SETTINGS_FILE = configuration.SETTINGS_FILE
+
 class Settings_Fetcher:
     '''All the stuff related to loading and saving per-guild settings'''
-    def __init__(self, settings_file = "./settings.json"):
+    def __init__(self, settings_file = SETTINGS_FILE):
         self.settings_dictionary = {} #is dic to make it easier to search for settings later without involving iteration
         self.settings_file = settings_file
         try:

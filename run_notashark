@@ -17,49 +17,47 @@
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
 import notashark
+import argparse
 from os import environ
 from sys import exit
 import logging
 
-DEFAULT_LOGGING_LEVEL = logging.INFO
-DEFAULT_STATISTICS_UPDATE_TIME = 10
-
-try:
-    LOGGING_ENVAR = str(environ['SCRIPT_LOGGING_LEVEL'].lower())
-except:
-    LOGGING_LEVEL = DEFAULT_LOGGING_LEVEL
-else:
-    if LOGGING_ENVAR == "debug":
-        LOGGING_LEVEL = logging.DEBUG
-    elif LOGGING_ENVAR == "warning":
-        LOGGING_LEVEL = logging.WARNING
-    else:
-        LOGGING_LEVEL = logging.INFO
+BOT_NAME = notashark.configuration.BOT_NAME
+DEFAULT_SERVERLIST_UPDATE_TIME = notashark.configuration.SERVERLIST_UPDATE_TIME
+DEFAULT_SETTINGS_AUTOSAVE_TIME = notashark.configuration.SETTINGS_AUTOSAVE_TIME
 
 log = logging.getLogger()
-log.setLevel(LOGGING_LEVEL)
+log.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt='[%(asctime)s][%(name)s][%(levelname)s] %(message)s', datefmt='%d.%m.%y %H:%M:%S'))
 log.addHandler(handler)
 
-log.info(f'Logging level has been set to "{LOGGING_LEVEL}"')
+ap = argparse.ArgumentParser()
+ap.add_argument("--debug", help=f"Add debug messages to {BOT_NAME}'s output", action="store_true")
+ap.add_argument("--serverlist-update-time", help=f"Custom lengh (in seconds) of pause between requests to api in order to get fresh info about active servers with players on them. Also used to autoupdate related embed. Could not be less than default value, which is {DEFAULT_SERVERLIST_UPDATE_TIME} seconds", type=int)
+ap.add_argument("--settings-autosave-time", help=f"Custom lengh (in seconds) of pause between autosaving per-server settings on disk. Could not be less than default value, which is {DEFAULT_SETTINGS_AUTOSAVE_TIME} seconds", type=int)
+args = ap.parse_args()
+
+if args.debug:
+    log.setLevel(logging.DEBUG)
 
 try:
-    BOT_TOKEN = environ['DISCORD_KEY']
+    BOT_TOKEN = environ['NOTASHARK_DISCORD_KEY']
 except KeyError:
-    log.critical("DISCORD_KEY environment variable isnt set. Edit bootin_up.sh accordingly, or set it up manually.\nAbort")
+    log.critical("NOTASHARK_DISCORD_KEY environment variable isnt set. Edit bootin_up.sh accordingly, or set it up manually.\nAbort")
     exit(1)
 
-try:
-    STATISTICS_UPDATE_TIME=int(environ['STATISTICS_UPDATE_TIME'])
-except:
-    log.warning("STATISTICS_UPDATE_TIME isnt set, using defaults instead")
-    STATISTICS_UPDATE_TIME = 30
-else:
-    if STATISTICS_UPDATE_TIME < DEFAULT_STATISTICS_UPDATE_TIME:
-        STATISTICS_UPDATE_TIME = DEFAULT_STATISTICS_UPDATE_TIME
-log.info(f"STATISTICS_UPDATE_TIME has been set to {STATISTICS_UPDATE_TIME} seconds")
+if args.serverlist_update_time and (args.serverlist_update_time > DEFAULT_SERVERLIST_UPDATE_TIME):
+    notashark.configuration.SERVERLIST_UPDATE_TIME = args.serverlist_update_time
+log.info(f"Serverlist update time has been set to {notashark.configuration.SERVERLIST_UPDATE_TIME} seconds")
 
-notashark.discord_bot.STATISTICS_UPDATE_TIME = STATISTICS_UPDATE_TIME
-notashark.data_fetcher.STATISTICS_UPDATE_TIME = STATISTICS_UPDATE_TIME
-notashark.discord_bot.main(BOT_TOKEN)
+if args.settings_autosave_time and (args.settings_autosave_time > DEFAULT_SETTINGS_AUTOSAVE_TIME):
+    notashark.configuration.SETTINGS_AUTOSAVE_TIME = args.settings_autosave_time
+log.info(f"Settings autosave time has been set to {notashark.configuration.SETTINGS_AUTOSAVE_TIME} seconds")
+
+log.debug(f"Launching {BOT_NAME}")
+try:
+    notashark.discord_bot.bot.run(BOT_TOKEN)
+except discord.errors.LoginFailure:
+    log.critical("Invalid token error: double-check the value of NOTASHARK_DISCORD_KEY environment variable.\nAbort")
+    exit(1)

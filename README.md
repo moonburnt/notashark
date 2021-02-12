@@ -1,28 +1,34 @@
 *This started as shark-v2 clone*
 
-# Description:
+# notashark
+
+## Description:
 
 Well, its a small discord bot for King Arthur's Gold, written in python + discord.py. Thus far it doesnt have much features, but I may update it with new stuff... eventually
 
 ![Statistics message example](https://files.catbox.moe/uqnrzx.png?raw=true)
 
-# Dependencies:
+## Dependencies:
 
 - python 3.8 (may work on previous versions)
-- [discord.py](https://github.com/Rapptz/discord.py)
+- discord.py
+- requests
 - [pykagapi](https://github.com/moonburnt/pykagapi)
 
-# Usage:
+## Usage:
 
-- Open bootin_up.sh in your text editor of choice
-- Edit its content accordingly (set up DISCORD_KEY variable. Optionally some others)
-- Run `./bootin_up.sh`
+### Basic:
 
-Alternatively:
-- Set up envars by your own
-- `chmod +x ./run-notashark`
-- Run `./run-notashark`
+- Open launcher.sh in your text editor of choice
+- Edit 'NOTASHARK_DISCORD_KEY' variable to match your bot's discord token
+- Run `./launcher.sh`
+This will run bot in its default configuration, suitable for most needs.
 
-# LICENSE:
+### Advanced:
+- Manually setup 'NOTASHARK_DISCORD_KEY' environment variable to match your bot's discord token
+- `./run_notashark -h` to get full list of available launch flags
+- `./run_notashark` with whatever flags you want
+
+## LICENSE:
 
 [GPLv3](LICENSE)

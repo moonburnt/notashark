@@ -15,7 +15,7 @@
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
 import discord
-from notashark import data_fetcher, settings_fetcher
+from notashark import data_fetcher, settings_fetcher, configuration
 from asyncio import sleep
 import logging
 from discord.ext import commands
@@ -24,10 +24,10 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-BOT_NAME = "notashark"
-BOT_PREFIX = "!"
-STATISTICS_UPDATE_TIME = 10
-SETTINGS_AUTOSAVE_TIME = 600 #prolly too much. Also would benefit from being configurable as envar
+BOT_NAME = configuration.BOT_NAME
+BOT_PREFIX = configuration.BOT_PREFIX
+SERVERLIST_UPDATE_TIME = configuration.SERVERLIST_UPDATE_TIME
+SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
 df = data_fetcher.Data_Fetcher()
 sf = settings_fetcher.Settings_Fetcher()
@@ -170,8 +170,8 @@ async def on_ready():
 
     settings_file_update_timer = 0 #this is but nasty hack, but Im not doing multithreading for just that
     while True:
-        settings_file_update_timer += STATISTICS_UPDATE_TIME
-        await sleep(STATISTICS_UPDATE_TIME) #sleeping before task to let statistics update
+        settings_file_update_timer += SERVERLIST_UPDATE_TIME
+        await sleep(SERVERLIST_UPDATE_TIME) #sleeping before task to let statistics update
         log.debug(f"Updating serverlists")
         await serverlist_autoupdater()
         log.debug(f"Updating bot's status")
@@ -255,15 +255,15 @@ async def help(ctx):
     f"Currently there are following custom commands available:\n"
     f"`{BOT_PREFIX}info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"
     f"`{BOT_PREFIX}serverlist` - will display list of active servers with their base info, aswell as total population statistics\n"
-    f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel to auto-fetch serverlist each {STATISTICS_UPDATE_TIME} seconds. You must be guild's admin to use it\n"
+    f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. You must be guild's admin to use it\n"
     )
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
 
 ###
-def main(bot_token):
-    '''Running the damn thing'''
-    try:
-        bot.run(bot_token)
-    except discord.errors.LoginFailure:
-        log.critical("Invalid token error: double-check the value of DISCORD_KEY environment variable.\nAbort")
-        exit(1)
+# def main(bot_token):
+    # '''Running the damn thing'''
+    # try:
+        # bot.run(bot_token)
+    # except discord.errors.LoginFailure:
+        # log.critical("Invalid token error: double-check the value of DISCORD_KEY environment variable.\nAbort")
+        # exit(1)
