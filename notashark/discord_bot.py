@@ -14,6 +14,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
+# This module contains discord bot itself, aswell as directly related functionality
+
 import discord
 from notashark import data_fetcher, settings_fetcher, configuration
 from asyncio import sleep
@@ -258,12 +260,3 @@ async def help(ctx):
     f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. You must be guild's admin to use it\n"
     )
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
-
-###
-# def main(bot_token):
-    # '''Running the damn thing'''
-    # try:
-        # bot.run(bot_token)
-    # except discord.errors.LoginFailure:
-        # log.critical("Invalid token error: double-check the value of DISCORD_KEY environment variable.\nAbort")
-        # exit(1)

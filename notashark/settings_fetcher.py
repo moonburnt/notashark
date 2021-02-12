@@ -14,6 +14,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
+# This module contains everything related to working with per-guild settings
+
 import logging
 import json
 from notashark import configuration
