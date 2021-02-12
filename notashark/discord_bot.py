@@ -17,12 +17,10 @@
 # This module contains discord bot itself, aswell as directly related functionality
 
 import discord
-from notashark import data_fetcher, settings_fetcher, configuration
+from notashark import data_fetcher, settings_fetcher, configuration, embeds_processor
 from asyncio import sleep
 import logging
 from discord.ext import commands
-from io import BytesIO
-from datetime import datetime
 
 log = logging.getLogger(__name__)
 
@@ -32,95 +30,6 @@ SERVERLIST_UPDATE_TIME = configuration.SERVERLIST_UPDATE_TIME
 SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
 sf = settings_fetcher.Settings_Fetcher()
-
-def _sanitizer(raw_data):
-    '''Receives dictionary with kag servers-related data. Sanitizing all necessary entries and returning it back'''
-    log.debug(f"Sanitizing stuff, to avoid weird markdown-related things from happening")
-    #todo: remake this into content-agnostic filter
-    data = {}
-    data['name'] = discord.utils.escape_markdown(raw_data['name'])
-    data['country_name'] = raw_data['country_name']
-    data['country_prefix'] = raw_data['country_prefix']
-    data['description'] = discord.utils.escape_markdown(raw_data['description'])
-    data['mode'] = discord.utils.escape_markdown(raw_data['mode'])
-    data['players'] = raw_data['players']
-    data['link'] = raw_data['link']
-    data['nicknames'] = raw_data['nicknames']
-
-    return data
-
-def single_server_embed(address):
-    '''Receives str(ip:port), returns embed with server's info, aswell as minimap file to attach to message'''
-    log.debug(f"Preparing embed for info of server with address {address}")
-    ip, port = address.split(":")
-    raw_data = data_fetcher.single_server_fetcher(ip, port)
-
-    log.debug(f"Getting minimap")
-    mm = BytesIO(raw_data['minimap'])
-    minimap = discord.File(mm, filename="minimap.png")
-
-    data = _sanitizer(raw_data)
-
-    log.debug(f"Building embed")
-    embed = discord.Embed(timestamp=datetime.utcnow())
-    embed.colour = 0x3498DB
-    embed.title = data['name'][:256]
-    embed.add_field(name="Description:", value=data['description'][:256], inline=False) #idk the correct maximum allowed size of embed field's value for sure. Was told its 1024, but will use 256 to avoid overcoming the size of embed itself
-    embed.add_field(name="Location:", value=data['country_name'], inline=False) #maybe also include country's icon? idk
-    embed.add_field(name="Link:", value=data['link'], inline=False)
-    embed.add_field(name="Game Mode:", value=data['mode'], inline=False)
-    embed.add_field(name="Players:", value=data['players'], inline=False)
-    embed.add_field(name="Currently Playing:", value=data['nicknames'][:1024], inline=False)
-
-    embed.set_image(url="attachment://minimap.png")
-    log.debug(f"returning embed")
-
-    return embed, minimap
-
-def serverlist_embed():
-    '''Returns list of all up and running kag servers. Meant to be used in loop and not as standalone command'''
-    log.debug(f"Fetching data")
-    raw_data = data_fetcher.kag_servers
-
-    log.debug(f"Building embed")
-    embed = discord.Embed(timestamp=datetime.utcnow())
-    embed.colour = 0x3498DB
-    embed_title = f"There are currently {raw_data['servers_amount']} active servers with {raw_data['total_players_amount']} players"
-    embed_description = "**Featuring:**"
-
-    log.debug(f"Adding servers to message")
-    embed_fields_amount = 0
-    message_len = len(embed_title)+len(embed_description)
-    leftowers_counter = 0
-    for server in raw_data['servers']:
-        if embed_fields_amount < 25:
-            embed_fields_amount += 1
-            data = _sanitizer(server)
-
-            field_title = f"\n**:flag_{data['country_prefix']}: {data['name']}**"
-            field_content = ""
-            field_content += f"\n**Address:** {data['link']}"
-            field_content += f"\n**Game Mode:** {data['mode']}"
-            field_content += f"\n**Players:** {data['players']}"
-            field_content += f"\n**Currently Playing**: {data['nicknames']}"
-
-            #this part isnt fair coz server with dozen players will be treated as low-populated
-            #also it looks like crap and needs to be reworked #TODO
-            if len(field_content) <= 1024 and (len(field_content)+len(field_title)+message_len < 6000):
-                message_len += len(field_content)+len(field_title)
-                embed.add_field(name = field_title[:256], value = field_content, inline=False)
-            else:
-                leftowers_counter += 1
-        else:
-            leftowers_counter += 1
-
-    if leftowers_counter > 0:
-        embed.add_field(name = f"\n*And {leftowers_counter} less populated servers*", inline=False)
-
-    embed.title = embed_title
-    embed.description = embed_description
-
-    return embed
 
 async def status_updater():
     '''Updates current bot's status'''
@@ -143,7 +52,7 @@ async def serverlist_autoupdater():
             channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
             message_id = sf.settings_dictionary[item]['serverlist_message_id']
             message = await channel.fetch_message(message_id)
-            infobox = serverlist_embed()
+            infobox = embeds_processor.serverlist_embed()
             await message.edit(content=None, embed=infobox)
 
         except Exception as e:
@@ -188,17 +97,6 @@ async def on_guild_available(ctx):
     log.debug(f"Checking if bot knows about this guild")
     sf.settings_checker(ctx.id) #mybe rewrite this? idk
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-
-    if message.content.lower() == "ping":
-        await message.channel.send("pong")
-        log.info(f"{message.author} has pinged the bot, responded")
-
-    await bot.process_commands(message)
-
 @bot.command()
 async def info(ctx, *args):
     if not args:
@@ -208,10 +106,10 @@ async def info(ctx, *args):
 
     server_address = args[0]
     try:
-        infobox, minimap = single_server_embed(server_address)
-    except:
+        infobox, minimap = embeds_processor.single_server_embed(server_address)
+    except Exception as e:
         await ctx.channel.send(f"Couldnt find `{server_address}`. Are you sure the address is correct and server is up and running?")
-        log.info(f"{ctx.author} has asked for server info of {server_address}, but there is no such server")
+        log.info(f"Got exception while trying to answer {ctx.author} with info of {server_address}: {e}")
     else:
         await ctx.channel.send(content=None, file=minimap, embed=infobox)
         log.info(f"{ctx.author} has asked for server info of {server_address}. Responded")
@@ -241,7 +139,7 @@ async def set(ctx, *args):
 @bot.command()
 async def serverlist(ctx):
     try:
-        infobox = serverlist_embed()
+        infobox = embeds_processor.serverlist_embed()
     except Exception as e:
         await ctx.channel.send(f"Something went wrong...")
         log.error(f"An unfortunate exception has occured while trying to send serverlist: {e}")
