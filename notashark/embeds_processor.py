@@ -18,13 +18,11 @@
 
 import logging
 from discord import utils, Embed, File
-from notashark import data_fetcher, configuration
+from notashark import data_fetcher
 from io import BytesIO
 from datetime import datetime
 
 log = logging.getLogger(__name__)
-
-SERVERLIST_UPDATE_TIME = configuration.SERVERLIST_UPDATE_TIME
 
 def sanitizer(raw_data):
     '''Receives dictionary. Sanitizies its content to dont include anything that could break markdown or ping people. Then return back'''
@@ -35,20 +33,20 @@ def sanitizer(raw_data):
             nomark = utils.escape_markdown(value)
             nomen = utils.escape_mentions(nomark)
             clean_data.append((key, nomen))
-        #this is probably not the best way to handle exceptions
-        #but thus far its been thrown only by binary minimap, so...
-        except:
+        #avoiding issue with trying to apply string method to minimap's bytes
+        except TypeError:
             clean_data.append((key, value))
+        except Exception as e:
+            log.warning(f"Unable to sanitize dictionary: {e}")
 
     data = dict(clean_data)
     log.debug(f"Sanitizer returned followed data: {data}")
 
     return data
 
-def single_server_embed(address):
-    '''Receives str(ip:port), returns embed with server's info, aswell as minimap file to attach to message'''
-    log.debug(f"Preparing embed for info of server with address {address}")
-    ip, port = address.split(":")
+def single_server_embed(ip, port):
+    '''Receives ip and port, returns embed with server's info and minimap file to attach to message'''
+    log.debug(f"Preparing embed for info of server with address {ip}:{port}")
     raw_data = data_fetcher.single_server_fetcher(ip, port)
 
     log.debug(f"Getting minimap")
@@ -61,20 +59,22 @@ def single_server_embed(address):
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed.title = data['name'][:256]
-    embed.add_field(name="Description:", value=data['description'][:256], inline=False) #idk the correct maximum allowed size of embed field's value for sure. Was told its 1024, but will use 256 to avoid overcoming the size of embed itself
-    embed.add_field(name="Location:", value=data['country_name'], inline=False) #maybe also include country's icon? idk
+    #idk the correct maximum allowed size of embed field's value for sure.
+    #Was told its 1024, but will use 256 to avoid overcoming the size of embed itself
+    embed.add_field(name="Description:", value=data['description'][:256], inline=False)
+    #maybe also include country's icon? idk
+    embed.add_field(name="Location:", value=data['country_name'], inline=False)
     embed.add_field(name="Link:", value=data['link'], inline=False)
     embed.add_field(name="Game Mode:", value=data['mode'], inline=False)
     embed.add_field(name="Players:", value=data['players'], inline=False)
     embed.add_field(name="Currently Playing:", value=data['nicknames'][:1024], inline=False)
 
     embed.set_image(url="attachment://minimap.png")
-    log.debug(f"returning embed")
 
     return embed, minimap
 
 def serverlist_embed():
-    '''Returns list of all up and running kag servers. Meant to be used in loop and not as standalone command'''
+    '''Returns embed with list of all up and running kag servers'''
     log.debug(f"Fetching data")
     raw_data = data_fetcher.kag_servers
 

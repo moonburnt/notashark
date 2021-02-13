@@ -91,14 +91,16 @@ async def on_guild_available(ctx):
 
 @bot.command()
 async def info(ctx, *args):
-    if not args:
+    try:
+        server_address = args[0]
+        ip, port = server_address.split(":")
+    except:
         await ctx.channel.send(f"This command requires server IP and port to work. Correct syntax be like: `{BOT_PREFIX}info 8.8.8.8:80`")
         log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
         return
 
-    server_address = args[0]
     try:
-        infobox, minimap = embeds_processor.single_server_embed(server_address)
+        infobox, minimap = embeds_processor.single_server_embed(ip, port)
     except Exception as e:
         await ctx.channel.send(f"Couldnt find `{server_address}`. Are you sure the address is correct and server is up and running?")
         log.info(f"Got exception while trying to answer {ctx.author} with info of {server_address}: {e}")
@@ -143,7 +145,7 @@ async def serverlist(ctx):
 
 @bot.command()
 async def help(ctx):
-    #I should probably remake this into embed, at some point
+    #I thought about remaking it into embed, but it looks ugly this way
     await ctx.channel.send(f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
     f"Currently there are following custom commands available:\n"
     f"`{BOT_PREFIX}info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"
