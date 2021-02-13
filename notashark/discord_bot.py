@@ -33,9 +33,7 @@ sf = settings_fetcher.Settings_Fetcher()
 
 async def status_updater():
     '''Updates current bot's status'''
-    #this throws exception if ran "right away", while kag_servers hasnt been populated yet
     raw_data = data_fetcher.kag_servers
-    print(raw_data)
     if raw_data and (int(raw_data['total_players_amount']) > 0):
         message = f"with {raw_data['total_players_amount']} peasants | {BOT_PREFIX}help"
     else:
@@ -46,13 +44,22 @@ async def status_updater():
 async def serverlist_autoupdater():
     '''Automatically update serverlist for all matching servers. Expects sf.settings_dictionary to exist and have items inside'''
     for item in sf.settings_dictionary:
-        #doing this way, in case original message got wiped. Prolly need to catch some expected exceptions to dont log them
+        #avoiding entries without serverlist_channel_id being set
+        #this by itself may backfire if serverlist_channel_id isnt set
+        #for avoiding this - see discord.errors.HTTPException handling below
+        if (not sf.settings_dictionary[item]) or (not sf.settings_dictionary[item]['serverlist_channel_id']):
+            continue
+
         try:
             #future reminder: serverlist_channel_id should always be int
-            channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
+            channel_id = sf.settings_dictionary[item]['serverlist_channel_id']
+            channel = bot.get_channel(channel_id)
             message_id = sf.settings_dictionary[item]['serverlist_message_id']
             message = await channel.fetch_message(message_id)
-        except discord.errors.NotFound:
+        except AttributeError:
+            log.warning(f"Unable to update serverlist on channel {channel_id}: guild {item} is unavailable")
+            continue
+        except (discord.errors.NotFound, discord.errors.HTTPException):
             log.warning(f"Unable to find message {message_id}, setting up new one")
             channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
             message = await channel.send("Gathering the data...")
@@ -61,11 +68,11 @@ async def serverlist_autoupdater():
         except Exception as e:
             #this SHOULD NOT happening, kept there as "last resort"
             log.error(f"Got exception while trying to edit serverlist message: {e}")
-            return
-        finally:
-            infobox = embeds_processor.serverlist_embed()
-            await message.edit(content=None, embed=infobox)
-            log.info(f"Successfully updated serverlist on {channel.id}/{message.id}")
+            continue
+
+        infobox = embeds_processor.serverlist_embed()
+        await message.edit(content=None, embed=infobox)
+        log.info(f"Successfully updated serverlist on {channel.id}/{message.id}")
 
 bot = commands.Bot(command_prefix=BOT_PREFIX)
 converter = commands.TextChannelConverter()
