@@ -18,6 +18,7 @@
 
 import notashark
 import argparse
+import threading
 from os import environ
 from sys import exit
 import logging
@@ -26,7 +27,7 @@ BOT_NAME = notashark.configuration.BOT_NAME
 DEFAULT_SERVERLIST_UPDATE_TIME = notashark.configuration.SERVERLIST_UPDATE_TIME
 DEFAULT_SETTINGS_AUTOSAVE_TIME = notashark.configuration.SETTINGS_AUTOSAVE_TIME
 
-log = logging.getLogger()
+log = logging.getLogger('notashark')
 log.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt='[%(asctime)s][%(name)s][%(levelname)s] %(message)s', datefmt='%d.%m.%y %H:%M:%S'))
@@ -55,8 +56,16 @@ if args.settings_autosave_time and (args.settings_autosave_time > DEFAULT_SETTIN
     notashark.configuration.SETTINGS_AUTOSAVE_TIME = args.settings_autosave_time
 log.info(f"Settings autosave time has been set to {notashark.configuration.SETTINGS_AUTOSAVE_TIME} seconds")
 
+log.debug(f"Launching data fetcher")
+#daemon=True allows to shutdown this thing in case of emergency right away
+dft = threading.Thread(target=notashark.data_fetcher._serverlist_autoupdater, daemon=True)
+dft.start()
+
+log.debug(f"Launching settings autosaver")
+sat = threading.Thread(target=notashark.settings_fetcher._settings_autosaver)
+sat.start()
+
 log.debug(f"Launching {BOT_NAME}")
-notashark.data_fetcher.th.start()
 try:
     notashark.discord_bot.bot.run(BOT_TOKEN)
 except discord.errors.LoginFailure:

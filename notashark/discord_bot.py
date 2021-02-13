@@ -65,7 +65,7 @@ async def serverlist_autoupdater():
         finally:
             infobox = embeds_processor.serverlist_embed()
             await message.edit(content=None, embed=infobox)
-            log.info(f"Successfully updated serverlist on {channel}/{message}")
+            log.info(f"Successfully updated serverlist on {channel.id}/{message.id}")
 
 bot = commands.Bot(command_prefix=BOT_PREFIX)
 converter = commands.TextChannelConverter()
@@ -75,24 +75,13 @@ bot.remove_command('help')
 @bot.event
 async def on_ready():
     log.info(f'Running {BOT_NAME} as {bot.user}!')
-
-    #instead of this hack, I should probably make proper module for threading stuff
-    #and operate both this and serverlist autoupdater from that thing
-    settings_file_update_timer = 0
     while True:
-        settings_file_update_timer += SERVERLIST_UPDATE_TIME
-        await sleep(SERVERLIST_UPDATE_TIME) #sleeping before task to let statistics update
+        #sleeping before task to let statistics populate on bot's launch
+        await sleep(SERVERLIST_UPDATE_TIME)
         log.debug(f"Updating serverlists")
         await serverlist_autoupdater()
         log.debug(f"Updating bot's status")
         await status_updater()
-
-        #also I really got tired of this not overwritig settings often enough
-        #maybe I should make it also do so on keyboard interrupt?
-        if settings_file_update_timer >= SETTINGS_AUTOSAVE_TIME:
-            settings_file_update_timer = 0
-            log.debug(f"Overwriting settings")
-            sf.settings_saver()
 
 @bot.event
 async def on_guild_available(ctx):
@@ -132,7 +121,6 @@ async def set(ctx, *args):
             sf.settings_dictionary[str(ctx.guild.id)]['serverlist_channel_id'] = channel_id
             #resetting message id, in case this channel has already been set for that purpose in past
             sf.settings_dictionary[str(ctx.guild.id)]['serverlist_message_id'] = None
-            print(sf.settings_dictionary)
         except Exception as e:
             log.error(f"Got exception while trying to edit serverlist message: {e}")
             await ctx.channel.send(f"Something went wrong... Please double-check syntax and try again")

@@ -19,10 +19,12 @@
 import logging
 import json
 from notashark import configuration
+from time import sleep
 
 log = logging.getLogger(__name__)
 
 SETTINGS_FILE = configuration.SETTINGS_FILE
+SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
 class Settings_Fetcher:
     '''All the stuff related to loading and saving per-guild settings'''
@@ -50,7 +52,6 @@ class Settings_Fetcher:
             f.write(jdata)
         log.debug(f"Successfully wrote data to {self.settings_file}")
 
-
     def settings_checker(self, guild_id):
         '''Receive str(guild_id). If guild doesnt exist - add it to list'''
         #I have no idea if this should be there at all, lol
@@ -67,3 +68,15 @@ class Settings_Fetcher:
             log.debug(f"Now settings list looks like: {self.settings_dictionary}")
         else:
             log.debug(f"Found {guild_id} on self.settings_dictionary, no need to add manually")
+
+def _settings_autosaver():
+    '''Autosaves settings to SETTINGS_FILE each SETTINGS_AUTOSAVE_TIME seconds.
+    Intended to be ran in separate thread on application's launch'''
+    sf = Settings_Fetcher()
+
+    log.debug(f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds to save settings to {SETTINGS_FILE}")
+    sleep(SETTINGS_AUTOSAVE_TIME)
+    try:
+        sf.settings_saver()
+    except Exception as e:
+        log.critical(f"Unable to save settings to file: {e}")

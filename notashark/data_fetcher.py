@@ -156,6 +156,3 @@ def _serverlist_autoupdater():
         log.debug(f"Successfully updated kag_servers")
         log.debug(f"Waiting {SERVERLIST_UPDATE_TIME} seconds to update kag_servers again")
         sleep(SERVERLIST_UPDATE_TIME)
-
-#daemon=True allows to shutdown this thing in case of emergency right away
-th = threading.Thread(target=_serverlist_autoupdater, daemon=True)
