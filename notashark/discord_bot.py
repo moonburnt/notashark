@@ -52,17 +52,20 @@ async def serverlist_autoupdater():
             channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
             message_id = sf.settings_dictionary[item]['serverlist_message_id']
             message = await channel.fetch_message(message_id)
-            infobox = embeds_processor.serverlist_embed()
-            await message.edit(content=None, embed=infobox)
-
-        except Exception as e:
-            #this may be faulty if some gibberish has got into settings dictionary
-            #but it shouldnt get there... I guess
-            log.error(f"Got exception while trying to edit serverlist message: {e}")
+        except discord.errors.NotFound:
+            log.warning(f"Unable to find message {message_id}, setting up new one")
             channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
             message = await channel.send("Gathering the data...")
             log.info(f"Sent placeholder serverlist msg to {item}/{channel.id}")
             sf.settings_dictionary[item]['serverlist_message_id'] = message.id
+        except Exception as e:
+            #this SHOULD NOT happening, kept there as "last resort"
+            log.error(f"Got exception while trying to edit serverlist message: {e}")
+            return
+        finally:
+            infobox = embeds_processor.serverlist_embed()
+            await message.edit(content=None, embed=infobox)
+            log.info(f"Successfully updated serverlist on {channel}/{message}")
 
 bot = commands.Bot(command_prefix=BOT_PREFIX)
 converter = commands.TextChannelConverter()
@@ -117,14 +120,17 @@ async def info(ctx, *args):
 @bot.command()
 async def set(ctx, *args):
     admin_check = ctx.message.author.guild_permissions.administrator #ensuring that message's author is admin
-    if len(args) >= 3 and (args[0] == "autoupdate") and (args[1] == "channel") and admin_check: #this doesnt need to be multiline - other args will be checked only if first has matched, thus there should be no accident exceptions
+    #this doesnt need to be multiline, coz next arg is checked only if first match
+    #thus there should be no exception if args is less than necessary
+    if len(args) >= 3 and (args[0] == "autoupdate") and (args[1] == "channel") and admin_check:
         try:
             clink = args[2]
             log.debug(f"Attempting to get ID of channel {clink}")
             cid = await converter.convert(ctx, clink)
             channel_id = cid.id
-            sf.settings_dictionary[str(ctx.guild.id)]['serverlist_channel_id'] = channel_id #its necessary to specify ctx.guild.id as str, coz json cant into ints in keys
-            #resettings message id, in case this channel has already been set for that purpose in past
+            #its necessary to specify ctx.guild.id as str, coz json cant into ints in keys
+            sf.settings_dictionary[str(ctx.guild.id)]['serverlist_channel_id'] = channel_id
+            #resetting message id, in case this channel has already been set for that purpose in past
             sf.settings_dictionary[str(ctx.guild.id)]['serverlist_message_id'] = None
             print(sf.settings_dictionary)
         except Exception as e:
