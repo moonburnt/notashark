@@ -26,57 +26,51 @@ log = logging.getLogger(__name__)
 SETTINGS_FILE = configuration.SETTINGS_FILE
 SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
-class Settings_Fetcher:
-    '''All the stuff related to loading and saving per-guild settings'''
-    def __init__(self, settings_file = SETTINGS_FILE):
-        self.settings_dictionary = {} #is dic to make it easier to search for settings later without involving iteration
-        self.settings_file = settings_file
-        try:
-            s = self.settings_loader()
-        except Exception as e:
-            log.error(f"An unfortunate exception has occured while trying to load serverlist: {e}")
-        else:
-            self.settings_dictionary = s
+def settings_loader():
+    '''Loads settings from SETTINGS_FILE, if available'''
+    with open(SETTINGS_FILE, 'r') as j:
+        data = json.load(j)
+    log.debug(f"Got following data: {data}")
+    return data
 
-    def settings_loader(self):
-        '''Loads settings from self.settings_file, if available'''
-        with open(self.settings_file, 'r') as j:
-            data = json.load(j)
-        log.debug(f"Got following data: {data}")
-        return data
+try:
+    SETTINGS_DICTIONARY = settings_loader()
+except Exception as e:
+    log.error(f"An unfortunate exception has occured while trying to load {SETTINGS_FILE}: {e}")
+    SETTINGS_DICTIONARY = {}
 
-    def settings_saver(self):
-        '''Converts self.settings_dictionary to json and saves to self.settings_file, if possible'''
-        jdata = json.dumps(self.settings_dictionary)
-        with open(self.settings_file, 'w') as f:
-            f.write(jdata)
-        log.debug(f"Successfully wrote data to {self.settings_file}")
+def settings_saver():
+    '''Converts SETTINGS_DICTIONARY to json and saves to SETTINGS_FILE, if possible'''
+    jdata = json.dumps(SETTINGS_DICTIONARY)
+    with open(SETTINGS_FILE, 'w') as f:
+        f.write(jdata)
+    log.debug(f"Successfully wrote data to {SETTINGS_FILE}")
 
-    def settings_checker(self, guild_id):
-        '''Receive str(guild_id). If guild doesnt exist - add it to list'''
-        #I have no idea if this should be there at all, lol
-        guild_id = str(guild_id)
-        if not guild_id in self.settings_dictionary:
-            log.debug(f"Couldnt find {guild_id} in self.settings_dictionary, adding")
-            x = {}
-            x['serverlist_channel_id'] = None #id of serverlist channel
-            x['serverlist_message_id'] = None #id of message that should be edited with actual info
-            #idk if this needs more settings
-
-            self.settings_dictionary[guild_id] = x
-            #Im not sure if this may go into race condition situation if called for multiple servers at once. Hopefully not
-            log.debug(f"Now settings list looks like: {self.settings_dictionary}")
-        else:
-            log.debug(f"Found {guild_id} on self.settings_dictionary, no need to add manually")
+def settings_checker(guild_id):
+    '''Receive str(guild_id). If guild doesnt exist - add it to list'''
+    #I have no idea if this should be there at all, lol
+    guild_id = str(guild_id)
+    global SETTINGS_DICTIONARY
+    if not guild_id in SETTINGS_DICTIONARY:
+        log.debug(f"Couldnt find {guild_id} in SETTINGS_DICTIONARY, adding")
+        x = {}
+        x['serverlist_channel_id'] = None #id of serverlist channel
+        x['serverlist_message_id'] = None #id of message that should be edited with actual info
+        #idk if this needs more settings
+        SETTINGS_DICTIONARY[guild_id] = x
+        #Im not sure if this may go into race condition situation if called for multiple servers at once. Hopefully not
+        log.debug(f"Now settings list looks like: {SETTINGS_DICTIONARY}")
+    else:
+        log.debug(f"Found {guild_id} on SETTINGS_DICTIONARY, no need to add manually")
 
 def _settings_autosaver():
     '''Autosaves settings to SETTINGS_FILE each SETTINGS_AUTOSAVE_TIME seconds.
     Intended to be ran in separate thread on application's launch'''
-    sf = Settings_Fetcher()
-
     log.debug(f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds to save settings to {SETTINGS_FILE}")
     sleep(SETTINGS_AUTOSAVE_TIME)
     try:
-        sf.settings_saver()
+        settings_saver()
     except Exception as e:
         log.critical(f"Unable to save settings to file: {e}")
+    else:
+        log.info(f"Successfully saved bot's settings into {SETTINGS_FILE}")

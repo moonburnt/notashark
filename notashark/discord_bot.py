@@ -29,8 +29,6 @@ BOT_PREFIX = configuration.BOT_PREFIX
 SERVERLIST_UPDATE_TIME = configuration.SERVERLIST_UPDATE_TIME
 SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
-sf = settings_fetcher.Settings_Fetcher()
-
 async def status_updater():
     '''Updates current bot's status'''
     raw_data = data_fetcher.kag_servers
@@ -42,29 +40,29 @@ async def status_updater():
     await bot.change_presence(activity=discord.Game(name=message))
 
 async def serverlist_autoupdater():
-    '''Automatically update serverlist for all matching servers. Expects sf.settings_dictionary to exist and have items inside'''
-    for item in sf.settings_dictionary:
+    '''Automatically update serverlist for all matching servers. Expects settings_fetcher.SETTINGS_DICTIONARY to exist and have items inside'''
+    for item in settings_fetcher.SETTINGS_DICTIONARY:
         #avoiding entries without serverlist_channel_id being set
         #this by itself may backfire if serverlist_channel_id isnt set
         #for avoiding this - see discord.errors.HTTPException handling below
-        if (not sf.settings_dictionary[item]) or (not sf.settings_dictionary[item]['serverlist_channel_id']):
+        if (not settings_fetcher.SETTINGS_DICTIONARY[item]) or (not settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_channel_id']):
             continue
 
         try:
             #future reminder: serverlist_channel_id should always be int
-            channel_id = sf.settings_dictionary[item]['serverlist_channel_id']
+            channel_id = settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_channel_id']
             channel = bot.get_channel(channel_id)
-            message_id = sf.settings_dictionary[item]['serverlist_message_id']
+            message_id = settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_message_id']
             message = await channel.fetch_message(message_id)
         except AttributeError:
             log.warning(f"Unable to update serverlist on channel {channel_id}: guild {item} is unavailable")
             continue
         except (discord.errors.NotFound, discord.errors.HTTPException):
             log.warning(f"Unable to find message {message_id}, setting up new one")
-            channel = bot.get_channel(sf.settings_dictionary[item]['serverlist_channel_id'])
+            channel = bot.get_channel(settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_channel_id'])
             message = await channel.send("Gathering the data...")
             log.info(f"Sent placeholder serverlist msg to {item}/{channel.id}")
-            sf.settings_dictionary[item]['serverlist_message_id'] = message.id
+            settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_message_id'] = message.id
         except Exception as e:
             #this SHOULD NOT happening, kept there as "last resort"
             log.error(f"Got exception while trying to edit serverlist message: {e}")
@@ -94,7 +92,7 @@ async def on_ready():
 async def on_guild_available(ctx):
     log.info(f"Connected to guild {ctx.id}")
     log.debug(f"Checking if bot knows about this guild")
-    sf.settings_checker(ctx.id) #mybe rewrite this? idk
+    settings_fetcher.settings_checker(ctx.id) #mybe rewrite this? idk
 
 @bot.command()
 async def info(ctx, *args):
@@ -127,9 +125,9 @@ async def set(ctx, *args):
             cid = await converter.convert(ctx, clink)
             channel_id = cid.id
             #its necessary to specify ctx.guild.id as str, coz json cant into ints in keys
-            sf.settings_dictionary[str(ctx.guild.id)]['serverlist_channel_id'] = channel_id
+            settings_fetcher.SETTINGS_DICTIONARY[str(ctx.guild.id)]['serverlist_channel_id'] = channel_id
             #resetting message id, in case this channel has already been set for that purpose in past
-            sf.settings_dictionary[str(ctx.guild.id)]['serverlist_message_id'] = None
+            settings_fetcher.SETTINGS_DICTIONARY[str(ctx.guild.id)]['serverlist_message_id'] = None
         except Exception as e:
             log.error(f"Got exception while trying to edit serverlist message: {e}")
             await ctx.channel.send(f"Something went wrong... Please double-check syntax and try again")
