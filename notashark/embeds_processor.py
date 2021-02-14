@@ -88,7 +88,7 @@ def serverlist_embed():
     log.debug(f"Building serverlist embed")
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
-    embed_title = (f"There are currently {raw_data['servers_amount']} active"
+    embed_title = (f"There are currently {raw_data['servers_amount']} active "
                    f"servers with {raw_data['total_players_amount']} players")
     embed_description = "**Featuring:**"
 
