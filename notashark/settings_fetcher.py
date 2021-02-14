@@ -36,11 +36,12 @@ def settings_loader():
 try:
     SETTINGS_DICTIONARY = settings_loader()
 except Exception as e:
-    log.error(f"An unfortunate exception has occured while trying to load {SETTINGS_FILE}: {e}")
+    log.error("An unfortunate exception has occured while "
+             f"trying to load {SETTINGS_FILE}: {e}")
     SETTINGS_DICTIONARY = {}
 
 def settings_saver():
-    '''Converts SETTINGS_DICTIONARY to json and saves to SETTINGS_FILE, if possible'''
+    '''Converts SETTINGS_DICTIONARY to json and saves to SETTINGS_FILE'''
     jdata = json.dumps(SETTINGS_DICTIONARY)
     with open(SETTINGS_FILE, 'w') as f:
         f.write(jdata)
@@ -55,10 +56,11 @@ def settings_checker(guild_id):
         log.debug(f"Couldnt find {guild_id} in SETTINGS_DICTIONARY, adding")
         x = {}
         x['serverlist_channel_id'] = None #id of serverlist channel
-        x['serverlist_message_id'] = None #id of message that should be edited with actual info
+        x['serverlist_message_id'] = None #id of message that should be edited
         #idk if this needs more settings
         SETTINGS_DICTIONARY[guild_id] = x
-        #Im not sure if this may go into race condition situation if called for multiple servers at once. Hopefully not
+        #Im not sure if this may go into race condition situation
+        #if called for multiple servers at once. Hopefully not
         log.debug(f"Now settings list looks like: {SETTINGS_DICTIONARY}")
     else:
         log.debug(f"Found {guild_id} on SETTINGS_DICTIONARY, no need to add manually")
@@ -67,7 +69,8 @@ def _settings_autosaver():
     '''Autosaves settings to SETTINGS_FILE each SETTINGS_AUTOSAVE_TIME seconds.
     Intended to be ran in separate thread on application's launch'''
     while True:
-        log.debug(f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds to save settings to {SETTINGS_FILE}")
+        log.debug(f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds "
+                  f"to save settings to {SETTINGS_FILE}")
         sleep(SETTINGS_AUTOSAVE_TIME)
         try:
             settings_saver()

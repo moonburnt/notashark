@@ -25,7 +25,8 @@ from datetime import datetime
 log = logging.getLogger(__name__)
 
 def sanitizer(raw_data):
-    '''Receives dictionary. Sanitizies its content to dont include anything that could break markdown or ping people. Then return back'''
+    '''Receives dictionary. Sanitizies its content to dont include anything
+    that could accidently break markdown or ping people. Then return dic back'''
     log.debug(f"Attempting to sanitize {raw_data}")
     clean_data = []
     for key, value in raw_data.items():
@@ -45,7 +46,8 @@ def sanitizer(raw_data):
     return data
 
 def single_server_embed(ip, port):
-    '''Receives ip and port, returns embed with server's info and minimap file to attach to message'''
+    '''Receives ip and port, returns embed with server's
+    info and minimap file to attach to message'''
     log.debug(f"Preparing embed for info of server with address {ip}:{port}")
     raw_data = data_fetcher.single_server_fetcher(ip, port)
 
@@ -59,15 +61,20 @@ def single_server_embed(ip, port):
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed.title = data['name'][:256]
-    #idk the correct maximum allowed size of embed field's value for sure.
-    #Was told its 1024, but will use 256 to avoid overcoming the size of embed itself
-    embed.add_field(name="Description:", value=data['description'][:256], inline=False)
+    #Idk the correct maximum allowed size of embed field's value.
+    #Someone has told that its 1024, but I will use 256
+    #to avoid overcoming max allowed size of embed itself.
+    embed.add_field(name="Description:",
+                    value=data['description'][:256],
+                    inline=False)
     #maybe also include country's icon? idk
     embed.add_field(name="Location:", value=data['country_name'], inline=False)
     embed.add_field(name="Link:", value=data['link'], inline=False)
     embed.add_field(name="Game Mode:", value=data['mode'], inline=False)
     embed.add_field(name="Players:", value=data['players'], inline=False)
-    embed.add_field(name="Currently Playing:", value=data['nicknames'][:1024], inline=False)
+    embed.add_field(name="Currently Playing:",
+                    value=data['nicknames'][:1024],
+                    inline=False)
 
     embed.set_image(url="attachment://minimap.png")
 
@@ -81,7 +88,8 @@ def serverlist_embed():
     log.debug(f"Building serverlist embed")
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
-    embed_title = f"There are currently {raw_data['servers_amount']} active servers with {raw_data['total_players_amount']} players"
+    embed_title = (f"There are currently {raw_data['servers_amount']} active"
+                   f"servers with {raw_data['total_players_amount']} players")
     embed_description = "**Featuring:**"
 
     log.debug(f"Adding servers to message")
@@ -95,24 +103,30 @@ def serverlist_embed():
             data = sanitizer(server)
 
             field_title = f"\n**:flag_{data['country_prefix']}: {data['name']}**"
-            field_content = ""
-            field_content += f"\n**Address:** {data['link']}"
-            field_content += f"\n**Game Mode:** {data['mode']}"
-            field_content += f"\n**Players:** {data['players']}"
-            field_content += f"\n**Currently Playing**: {data['nicknames']}"
+            field_content = (f"\n**Address:** {data['link']}"
+                             f"\n**Game Mode:** {data['mode']}"
+                             f"\n**Players:** {data['players']}"
+                             f"\n**Currently Playing**: {data['nicknames']}")
 
-            #this part isnt fair coz server with dozen players will be treated as low-populated
-            #also it looks like crap and needs to be reworked #TODO
-            if len(field_content) <= 1024 and (len(field_content)+len(field_title)+message_len < 6000):
-                message_len += len(field_content)+len(field_title)
-                embed.add_field(name = field_title[:256], value = field_content, inline=False)
+            #This part isnt fair coz server with dozen players will be treated
+            #as low-populated. Also it looks like crap and needs to be reworked.
+            #TODO
+            field_lengh = len(field_content)
+            title_lengh = len(field_title)
+            future_message_lengh = field_lengh + title_lengh + message_len
+            if field_lengh <= 1024 and (future_message_lengh < 6000):
+                message_len += field_lengh + title_lengh
+                embed.add_field(name = field_title[:256],
+                                value = field_content,
+                                inline = False)
             else:
                 leftowers_counter += 1
         else:
             leftowers_counter += 1
 
     if leftowers_counter > 0:
-        embed.add_field(name = f"\n*And {leftowers_counter} less populated servers*", inline=False)
+        field_name = f"\n*And {leftowers_counter} less populated servers*"
+        embed.add_field(name = field_name, inline=False)
 
     embed.title = embed_title
     embed.description = embed_description

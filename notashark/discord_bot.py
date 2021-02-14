@@ -40,12 +40,14 @@ async def status_updater():
     await bot.change_presence(activity=discord.Game(name=message))
 
 async def serverlist_autoupdater():
-    '''Automatically update serverlist for all matching servers. Expects settings_fetcher.SETTINGS_DICTIONARY to exist and have items inside'''
+    '''Automatically update serverlist for all matching servers.
+    Expects settings_fetcher.SETTINGS_DICTIONARY to exist and have items inside'''
     for item in settings_fetcher.SETTINGS_DICTIONARY:
         #avoiding entries without serverlist_channel_id being set
         #this by itself may backfire if serverlist_channel_id isnt set
         #for avoiding this - see discord.errors.HTTPException handling below
-        if (not settings_fetcher.SETTINGS_DICTIONARY[item]) or (not settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_channel_id']):
+        if ((not settings_fetcher.SETTINGS_DICTIONARY[item]) or
+            (not settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_channel_id'])):
             continue
 
         try:
@@ -55,7 +57,8 @@ async def serverlist_autoupdater():
             message_id = settings_fetcher.SETTINGS_DICTIONARY[item]['serverlist_message_id']
             message = await channel.fetch_message(message_id)
         except AttributeError:
-            log.warning(f"Unable to update serverlist on channel {channel_id}: guild {item} is unavailable")
+            log.warning(f"Unable to update serverlist on channel {channel_id}:"
+                        f"guild {item} is unavailable")
             continue
         except (discord.errors.NotFound, discord.errors.HTTPException):
             log.warning(f"Unable to find message {message_id}, setting up new one")
@@ -100,22 +103,26 @@ async def info(ctx, *args):
         server_address = args[0]
         ip, port = server_address.split(":")
     except:
-        await ctx.channel.send(f"This command requires server IP and port to work. For example: `{BOT_PREFIX}info 8.8.8.8:80`")
+        await ctx.channel.send("This command requires server IP and port to work."
+                              f"For example: `{BOT_PREFIX}info 8.8.8.8:80`")
         log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
         return
 
     try:
         infobox, minimap = embeds_processor.single_server_embed(ip, port)
     except Exception as e:
-        await ctx.channel.send(f"Couldnt find `{server_address}`. Are you sure the address is correct and server is up and running?")
-        log.info(f"Got exception while trying to answer {ctx.author} with info of {server_address}: {e}")
+        await ctx.channel.send(f"Couldnt find `{server_address}`. Are you sure "
+                                "the address is correct and server is up and running?")
+        log.info(f"Got exception while trying to answer {ctx.author} "
+                 f"with info of {server_address}: {e}")
     else:
         await ctx.channel.send(content=None, file=minimap, embed=infobox)
         log.info(f"{ctx.author} has asked for server info of {server_address}. Responded")
 
 @bot.command()
 async def set(ctx, *args):
-    admin_check = ctx.message.author.guild_permissions.administrator #ensuring that message's author is admin
+    #ensuring that message's author is admin
+    admin_check = ctx.message.author.guild_permissions.administrator
     #this doesnt need to be multiline, coz next arg is checked only if first match
     #thus there should be no exception if args is less than necessary
     if len(args) >= 3 and (args[0] == "autoupdate") and (args[1] == "channel") and admin_check:
@@ -130,12 +137,15 @@ async def set(ctx, *args):
             settings_fetcher.SETTINGS_DICTIONARY[str(ctx.guild.id)]['serverlist_message_id'] = None
         except Exception as e:
             log.error(f"Got exception while trying to edit serverlist message: {e}")
-            await ctx.channel.send(f"Something went wrong... Please double-check syntax and try again")
+            await ctx.channel.send("Something went wrong... "
+                                   "Please double-check syntax and try again")
         else:
             await ctx.channel.send(f"Successfully set {cid} as channel for autoupdates")
-            log.info(f"{ctx.author.id} tried to set {cid} as channel for autoupdates on {ctx.guild.id}/{ctx.channel.id}. Granted")
+            log.info(f"{ctx.author.id} tried to set {cid} as channel for "
+                     f"autoupdates on {ctx.guild.id}/{ctx.channel.id}. Granted")
     else:
-        await ctx.channel.send(f"Unable to process your request: please double-check syntax and your permissions on this guild")
+        await ctx.channel.send("Unable to process your request: please double-check "
+                               "syntax and your permissions on this guild")
 
 @bot.command()
 async def serverlist(ctx):
@@ -143,7 +153,8 @@ async def serverlist(ctx):
         infobox = embeds_processor.serverlist_embed()
     except Exception as e:
         await ctx.channel.send(f"Something went wrong...")
-        log.error(f"An unfortunate exception has occured while trying to send serverlist: {e}")
+        log.error("An unfortunate exception has occured while "
+                 f"trying to send serverlist: {e}")
     else:
         await ctx.channel.send(content=None, embed=infobox)
         log.info(f"{ctx.author} has asked for serverlist. Responded")
@@ -151,7 +162,8 @@ async def serverlist(ctx):
 @bot.command()
 async def kagstats(ctx, *args):
     if not args:
-        await ctx.channel.send(f"This command requires player name or id to be supplied. For example: `{BOT_PREFIX}kagstats bunnie`")
+        await ctx.channel.send("This command requires player name or id to be supplied. "
+                              f"For example: `{BOT_PREFIX}kagstats bunnie`")
         log.info(f"{ctx.author} has asked for player info, but misspelled prefix")
         return
 
@@ -159,7 +171,8 @@ async def kagstats(ctx, *args):
     try:
         infobox = embeds_processor.kagstats_embed(player)
     except Exception as e:
-        await ctx.channel.send(f"Couldnt find `{player}`. Are you sure this player exists and you didnt misspell their name or id?")
+        await ctx.channel.send(f"Couldnt find `{player}`. Are you sure this player "
+                                "exists and you didnt misspell their name or id?")
         log.info(f"Got exception while trying to answer {ctx.author} with info of player {player}: {e}")
     else:
         await ctx.send(content=None, embed=infobox)
@@ -168,11 +181,17 @@ async def kagstats(ctx, *args):
 @bot.command()
 async def help(ctx):
     #I thought about remaking it into embed, but it looks ugly this way
-    await ctx.channel.send(f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
-    f"Currently there are following custom commands available:\n"
-    f"`{BOT_PREFIX}info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"
-    f"`{BOT_PREFIX}kagstats player` - will display gameplay statistics of player with provided kagstats id or username\n"
-    f"`{BOT_PREFIX}serverlist` - will display list of active servers with their base info, aswell as total population statistics\n"
-    f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. You must be guild's admin to use it\n"
+    await ctx.channel.send(
+    f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
+     "Currently there are following custom commands available:\n"
+    f"`{BOT_PREFIX}info IP:port` - will display detailed info of "
+     "selected server, including description and in-game minimap\n"
+    f"`{BOT_PREFIX}kagstats player` - will display gameplay statistics "
+     "of player with provided kagstats id or username\n"
+    f"`{BOT_PREFIX}serverlist` - will display list of active servers with "
+     "their base info, aswell as their total population numbers\n"
+    f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel "
+    f"to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. "
+     "Keep in mind that you must be guild's admin to use it!\n"
     )
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
