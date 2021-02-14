@@ -66,11 +66,12 @@ def settings_checker(guild_id):
 def _settings_autosaver():
     '''Autosaves settings to SETTINGS_FILE each SETTINGS_AUTOSAVE_TIME seconds.
     Intended to be ran in separate thread on application's launch'''
-    log.debug(f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds to save settings to {SETTINGS_FILE}")
-    sleep(SETTINGS_AUTOSAVE_TIME)
-    try:
-        settings_saver()
-    except Exception as e:
-        log.critical(f"Unable to save settings to file: {e}")
-    else:
-        log.info(f"Successfully saved bot's settings into {SETTINGS_FILE}")
+    while True:
+        log.debug(f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds to save settings to {SETTINGS_FILE}")
+        sleep(SETTINGS_AUTOSAVE_TIME)
+        try:
+            settings_saver()
+        except Exception as e:
+            log.critical(f"Unable to save settings to file: {e}")
+        else:
+            log.info(f"Successfully saved bot's settings into {SETTINGS_FILE}")
