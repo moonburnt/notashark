@@ -4,9 +4,11 @@
 
 ## Description:
 
-Well, its a small discord bot for King Arthur's Gold, written in python + discord.py. Thus far it doesnt have much features, but I may update it with new stuff... eventually
+Well, its a small discord bot for King Arthur's Gold, written in python + discord.py. Its able to run on multiple discord guilds at once, has self-updating serverlist (and ability to set it up with just one chat command), supports settings autosaving to json and can showcase player's kagstats information. And thats not all! And more to come!
 
-![Statistics message example](https://files.catbox.moe/uqnrzx.png?raw=true)
+![Self-updating serverlist](https://i.fiery.me/Pjr9r.png?raw=true)
+
+![Player's kagstats info showcase](https://i.fiery.me/xI6mh.png?raw=true)
 
 ## Dependencies:
 
