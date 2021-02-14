@@ -55,7 +55,7 @@ def single_server_embed(ip, port):
 
     data = sanitizer(raw_data)
 
-    log.debug(f"Building embed")
+    log.debug(f"Building single server embed")
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed.title = data['name'][:256]
@@ -75,10 +75,10 @@ def single_server_embed(ip, port):
 
 def serverlist_embed():
     '''Returns embed with list of all up and running kag servers'''
-    log.debug(f"Fetching data")
+    log.debug(f"Preparing embed for serverlist")
     raw_data = data_fetcher.kag_servers
 
-    log.debug(f"Building embed")
+    log.debug(f"Building serverlist embed")
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed_title = f"There are currently {raw_data['servers_amount']} active servers with {raw_data['total_players_amount']} players"
@@ -116,5 +116,49 @@ def serverlist_embed():
 
     embed.title = embed_title
     embed.description = embed_description
+
+    return embed
+
+def kagstats_embed(player):
+    '''Receive str with player name or str/int with player id.
+    Returns embed with kagstats info of that player'''
+    log.debug(f"Preparing embed for kagstats info of player {player}")
+
+    raw_data = data_fetcher.kagstats_fetcher(player)
+    data = sanitizer(raw_data)
+
+    log.debug(f"Building kagstats info embed")
+    embed_description = (f"**{data['clan_tag'][:256]} "
+                         f"{data['character_name'][:256]} "
+                         f"({data['username'][:256]})**")
+    total_stats = (f"**KDR**: {data['total_kdr']}\n"
+                   f"**Kills**: {data['total_kills']}\n"
+                   f"**Deaths**: {data['total_deaths']}\n"
+                   f"**Flags Captured**: {data['captures']}\n"
+                   f"**Team Kills**: {data['team_kills']}\n"
+                   f"**Suicides**: {data['suicides']}")
+
+    archer_stats = (f"**KDR** {data['archer_kdr']}\n"
+                    f"**Kills**: {data['archer_kills']}\n"
+                    f"**Deaths**: {data['archer_deaths']}")
+
+    builder_stats = (f"**KDR** {data['builder_kdr']}\n"
+                    f"**Kills**: {data['builder_kills']}\n"
+                    f"**Deaths**: {data['builder_deaths']}")
+
+    knight_stats = (f"**KDR** {data['knight_kdr']}\n"
+                    f"**Kills**: {data['knight_kills']}\n"
+                    f"**Deaths**: {data['knight_deaths']}")
+
+    embed = Embed(timestamp=datetime.utcnow())
+    embed.colour = 0x3498DB
+    #if user has no avatar set - this wont do anything
+    embed.set_thumbnail(url=data['avatar'])
+    embed.title = f"KAG Stats - {data['character_name'][:256]}"
+    embed.description = embed_description
+    embed.add_field(name = "Total", value = total_stats, inline = False)
+    embed.add_field(name = "Archer", value = archer_stats)
+    embed.add_field(name = "Builder", value = builder_stats)
+    embed.add_field(name = "Knight", value = knight_stats)
 
     return embed

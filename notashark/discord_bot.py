@@ -100,7 +100,7 @@ async def info(ctx, *args):
         server_address = args[0]
         ip, port = server_address.split(":")
     except:
-        await ctx.channel.send(f"This command requires server IP and port to work. Correct syntax be like: `{BOT_PREFIX}info 8.8.8.8:80`")
+        await ctx.channel.send(f"This command requires server IP and port to work. For example: `{BOT_PREFIX}info 8.8.8.8:80`")
         log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
         return
 
@@ -149,11 +149,29 @@ async def serverlist(ctx):
         log.info(f"{ctx.author} has asked for serverlist. Responded")
 
 @bot.command()
+async def kagstats(ctx, *args):
+    if not args:
+        await ctx.channel.send(f"This command requires player name or id to be supplied. For example: `{BOT_PREFIX}kagstats bunnie`")
+        log.info(f"{ctx.author} has asked for player info, but misspelled prefix")
+        return
+
+    player = args[0]
+    try:
+        infobox = embeds_processor.kagstats_embed(player)
+    except Exception as e:
+        await ctx.channel.send(f"Couldnt find `{player}`. Are you sure this player exists and you didnt misspell their name or id?")
+        log.info(f"Got exception while trying to answer {ctx.author} with info of player {player}: {e}")
+    else:
+        await ctx.send(content=None, embed=infobox)
+        log.info(f"{ctx.author} has asked for player info of {player}. Responded")
+
+@bot.command()
 async def help(ctx):
     #I thought about remaking it into embed, but it looks ugly this way
     await ctx.channel.send(f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
     f"Currently there are following custom commands available:\n"
     f"`{BOT_PREFIX}info IP:port` - will display detailed info of selected server, including description and in-game minimap\n"
+    f"`{BOT_PREFIX}kagstats player` - will display gameplay statistics of player with provided kagstats id or username\n"
     f"`{BOT_PREFIX}serverlist` - will display list of active servers with their base info, aswell as total population statistics\n"
     f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. You must be guild's admin to use it\n"
     )

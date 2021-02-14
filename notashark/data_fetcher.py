@@ -14,9 +14,10 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
-# This module contains everything related to fetching raw data from kag api and editing it to be usefull
+# This module contains everything related to fetching
+# raw data from kag api and editing it to be usefull
 
-from pykagapi import kag
+from pykagapi import kag, kagstats
 import logging
 import threading
 import requests
@@ -34,7 +35,8 @@ kag_servers = None
 known_server_countries = []
 
 def _get_server_country(ip):
-    '''Receives str(ip), returns str(country of that ip) in lowercase format, based on geojs.io data'''
+    '''Receives str(ip), returns str(country of that ip) in lowercase.
+       Format is based on geojs.io data'''
     link = "https://get.geojs.io/v1/ip/country/"+ip+".json"
     response = requests.get(link, timeout = 30)
     pydic = json.loads(response.text)
@@ -42,7 +44,8 @@ def _get_server_country(ip):
 
 def _sort_by_players(x):
     '''Sort received list by len of ['players'] in its dictionaries'''
-    #this may bork at times, but I cant figure out why. Probably would be better to move it to related embeds handler?
+    #This may bork at times, but I cant figure out why.
+    #Probably would be better to move it to related embeds handler?
     players = len(x['nicknames'])
     return int(players)
 
@@ -64,10 +67,12 @@ def _clean_server_info(raw_data):
             if item['ip'] == raw_data['IPv4Address']:
                 data['country_prefix'] = item['country'].lower()
                 data['country_name'] = item['name']
-                log.debug(f"{raw_data['IPv4Address']}'s country is {data['country_name']}/{data['country_prefix']}, no need to fetch again!")
+                log.debug(f"{raw_data['IPv4Address']}'s country is "
+                          f"{data['country_name']}/{data['country_prefix']},"
+                           "no need to fetch again!")
 
     if not data['country_prefix']:
-        log.debug(f"Didnt find country of {raw_data['IPv4Address']} in list, fetching")
+        log.debug(f"Dont know country of {raw_data['IPv4Address']}, fetching")
         country = _get_server_country(raw_data['IPv4Address'])
         with countries_locker:
             log.debug(f"Adding {country} to list of known countries")
@@ -100,7 +105,8 @@ def _clean_server_info(raw_data):
 
 def single_server_fetcher(ip, port):
     '''Receives str/int for ip and port, returns dictionary with server's info'''
-    log.debug(f'Fetching detailed info for server with address {ip}:{port} from kag api')
+    log.debug("Fetching detailed info for server with"
+             f"address {ip}:{port} from kag api")
     raw_data = kag.server.status(ip, port)
 
     log.debug(f"Got the following raw info: {raw_data}")
@@ -142,10 +148,53 @@ def serverlist_fetcher():
     log.debug(f"Got following data: {data}")
     return data
 
+def kagstats_fetcher(player):
+    '''Receives str(player name) or str (player id).
+    Trying to fetch player's kagstats profile info (kdr and such).
+    Then return it as dictionary'''
+    log.debug(f"Attempting to fetch info of player {player} from api")
+    try:
+        raw_data = kagstats.player.stats_by_name(player)
+        player_id = raw_data['player']['id']
+    except:
+        raw_data = kagstats.player.stats_by_id(player)
+        player_id = player
+
+    captures = kagstats.player.captures(player_id)
+
+    data = {}
+    data['id'] = player_id
+    data['username'] = raw_data['player']['username']
+    data['character_name'] = raw_data['player']['characterName']
+    data['clan_tag'] = raw_data['player']['clanTag']
+    data['avatar'] = raw_data['player']['avatar']
+    data['suicides'] = raw_data['suicides']
+    data['team_kills'] = raw_data['teamKills']
+    data['archer_kills'] = raw_data['archerKills']
+    data['archer_deaths'] = raw_data['archerDeaths']
+    #rounding kdr to always return float like x.xx - not shorter nor longer
+    #using formatter instead of "round", coz round trimps multiple zeros to one
+    data['archer_kdr'] = "%.2f" % (data['archer_kills']/data['archer_deaths'])
+    data['builder_kills'] = raw_data['builderKills']
+    data['builder_deaths'] = raw_data['builderDeaths']
+    data['builder_kdr'] = "%.2f" % (data['builder_kills']/data['builder_deaths'])
+    data['knight_kills'] = raw_data['knightKills']
+    data['knight_deaths'] = raw_data['knightDeaths']
+    data['knight_kdr'] = "%.2f" % (data['knight_kills']/data['knight_deaths'])
+    data['total_kills'] = raw_data['totalKills']
+    data['total_deaths'] = raw_data['totalDeaths']
+    data['total_kdr'] = "%.2f" % (data['total_kills']/data['total_deaths'])
+    data['captures'] = captures
+    #I should probably also add favorite weapons and nemesis/bullied players
+
+    log.debug(f"Got following data: {data}")
+    return data
+
 #Stuff below is ugly as hell, but idk how to make it better
-#I mean - I could keep the class route, but it would re-introduce all the issues I tried to solve
+#I mean - I could keep the class route
+#but it would re-introduce all the issues I tried to solve
 def _serverlist_autoupdater():
-    '''Runs serverlist_fetcher in loop, so it keeps updating kag_servers on background'''
+    '''Runs serverlist_fetcher in loop, to autoupdate kag_servers on background'''
     while True:
         log.debug(f"Fetching new server info")
         servers = serverlist_fetcher()
@@ -154,5 +203,6 @@ def _serverlist_autoupdater():
             global kag_servers
             kag_servers = servers
         log.debug(f"Successfully updated kag_servers")
-        log.debug(f"Waiting {SERVERLIST_UPDATE_TIME} seconds to update kag_servers again")
+        log.debug(f"Waiting {SERVERLIST_UPDATE_TIME} seconds "
+                   "to update kag_servers again")
         sleep(SERVERLIST_UPDATE_TIME)
