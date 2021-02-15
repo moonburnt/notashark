@@ -161,6 +161,27 @@ def kagstats_fetcher(player):
         player_id = player
 
     captures = kagstats.player.captures(player_id)
+    hitters = kagstats.player.top_weapons(player_id)
+
+    #Idk how to phrase some of these, but they are there for reference
+    #and most likely wont be seen anyway
+    #The changes from reference are following:
+    #'builder' is 'Pickaxe', 'ram' is 'Vehicle',
+    #'mine_special' is just 'Mine', 'suddengib' is 'Scrolls'
+    known_hitters = ['Nothing', 'Crush', 'Fall', 'Water', 'Water Stun',
+                     'Water Stun Force', 'Drown', 'Fire', 'Burn', 'Flying',
+                     'Stomp', 'Suicide', 'Bite', 'Pickaxe', 'Sword', 'Shield',
+                     'Bomb', 'Stab', 'Arrow', 'Bomb Arrow', 'Ballista',
+                     'Stone From Catapult', 'Boulder From Catapult', 'Boulder',
+                     'Vehicle', 'Explosion', 'Keg', 'Mine', 'Mine', 'Spikes',
+                     'Saw', 'Drill', 'Muscles', 'Scrolls']
+    top_weapons = []
+    #coz we only need top-3 weapons
+    for item in hitters[0:3]:
+        item_data = {}
+        item_data['weapon'] = known_hitters[item['hitter']]
+        item_data['kills'] = item['kills']
+        top_weapons.append(item_data)
 
     data = {}
     data['id'] = player_id
@@ -185,7 +206,8 @@ def kagstats_fetcher(player):
     data['total_deaths'] = raw_data['totalDeaths']
     data['total_kdr'] = "%.2f" % (data['total_kills']/data['total_deaths'])
     data['captures'] = captures
-    #I should probably also add favorite weapons and nemesis/bullied players
+    data['top_weapons'] = top_weapons
+    #I should probably also add nemesis/bullied players
 
     log.debug(f"Got following data: {data}")
     return data
@@ -199,10 +221,10 @@ def leaderboard_fetcher(scope):
     log.debug(f"Attempting to fetch kagstats leaderboard for {scope}")
     if scope == 'kdr':
         leaderboard = kagstats.leaderboard.global_kdr()
-        description = 'All Time KDR'
+        description = 'Total KDR'
     elif scope == 'kills':
         leaderboard = kagstats.leaderboard.global_kills()
-        description = 'All Time Kills'
+        description = 'Total Kills'
     elif scope == 'global_archer':
         leaderboard = kagstats.leaderboard.global_archer()
         description = 'All Time Archer'
@@ -223,7 +245,7 @@ def leaderboard_fetcher(scope):
         leaderboard = kagstats.leaderboard.monthly_knight()
         description = 'Monthly Knight'
 
-    #this should already go sorted, no need to do anything manually
+    #this should already go sorted, no need to do that manually
     data = []
     for item in (leaderboard[0:3]):
         userdata = {}

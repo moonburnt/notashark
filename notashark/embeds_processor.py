@@ -142,35 +142,46 @@ def kagstats_embed(player):
     data = sanitizer(raw_data)
 
     log.debug(f"Building kagstats info embed")
-    embed_description = (f"**{data['clan_tag'][:256]} "
-                         f"{data['character_name'][:256]} "
-                         f"({data['username'][:256]})**")
-    total_stats = (f"**KDR**: {data['total_kdr']}\n"
-                   f"**Kills**: {data['total_kills']}\n"
-                   f"**Deaths**: {data['total_deaths']}\n"
-                   f"**Flags Captured**: {data['captures']}\n"
-                   f"**Team Kills**: {data['team_kills']}\n"
-                   f"**Suicides**: {data['suicides']}")
+    player_info = (f"**Name**: {data['clan_tag'][:256]} "
+                   f"{data['character_name'][:256]}\n"
+                   f"**Username**: {data['username']}\n"
+                    "**KAG Stats**: "
+                   f"<https://kagstats.com/#/players/{data['id']}>")
 
-    archer_stats = (f"**KDR** {data['archer_kdr']}\n"
+    positive_stats = (f"**Total KDR**: {data['total_kdr']}\n"
+                      f"**Total Kills**: {data['total_kills']}\n"
+                      f"**Flags Captured**: {data['captures']}")
+
+    negative_stats = (f"**Team Kills**: {data['team_kills']}\n"
+                      f"**Deaths**: {data['total_deaths']}\n"
+                      f"**Suicides**: {data['suicides']}")
+
+    archer_stats = (f"**KDR**: {data['archer_kdr']}\n"
                     f"**Kills**: {data['archer_kills']}\n"
                     f"**Deaths**: {data['archer_deaths']}")
 
-    builder_stats = (f"**KDR** {data['builder_kdr']}\n"
+    builder_stats = (f"**KDR**: {data['builder_kdr']}\n"
                     f"**Kills**: {data['builder_kills']}\n"
                     f"**Deaths**: {data['builder_deaths']}")
 
-    knight_stats = (f"**KDR** {data['knight_kdr']}\n"
+    knight_stats = (f"**KDR**: {data['knight_kdr']}\n"
                     f"**Kills**: {data['knight_kills']}\n"
                     f"**Deaths**: {data['knight_deaths']}")
+
+    top_weapons = ""
+    for item in data['top_weapons']:
+        weapon_info = f"**{item['weapon']}**: {item['kills']} kills\n"
+        top_weapons += weapon_info
 
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     #if user has no avatar set - this wont do anything
     embed.set_thumbnail(url=data['avatar'])
-    embed.title = f"KAG Stats - {data['character_name'][:256]}"
-    embed.description = embed_description
-    embed.add_field(name = "Total", value = total_stats, inline = False)
+    embed.title = "KAG Stats: Profile"
+    embed.add_field(name = "User Info", value = player_info, inline = False)
+    embed.add_field(name = "Positive", value = positive_stats)
+    embed.add_field(name = "Negative", value = negative_stats)
+    embed.add_field(name = "Top Weapons", value = top_weapons)
     embed.add_field(name = "Archer", value = archer_stats)
     embed.add_field(name = "Builder", value = builder_stats)
     embed.add_field(name = "Knight", value = knight_stats)
@@ -193,7 +204,7 @@ def leaderboard_embed(scope):
     log.debug(f"Building leaderboard embed")
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
-    embed.title = "KAG Stats Leaderboard"
+    embed.title = "KAG Stats: Leaderboard"
     embed.description = f"**{embed_description}**"
     for item in data:
         user_info = (f"**Name:** {item['clan_tag'][:256]} "
