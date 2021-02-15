@@ -176,3 +176,33 @@ def kagstats_embed(player):
     embed.add_field(name = "Knight", value = knight_stats)
 
     return embed
+
+def leaderboard_embed(scope):
+    '''Receive str with scope/type of leaderboard (e.g archer or monthly_archer).
+    Returns embed with kagstats info of that category'''
+    log.debug(f"Preparing embed for leaderboard {scope}")
+    raw_data, embed_description = data_fetcher.leaderboard_fetcher(scope)
+
+    data = []
+    positions = ['First', 'Second', 'Third']
+    for item, position in zip(raw_data, positions):
+        clean_item = sanitizer(item)
+        clean_item['position'] = position
+        data.append(clean_item)
+
+    log.debug(f"Building leaderboard embed")
+    embed = Embed(timestamp=datetime.utcnow())
+    embed.colour = 0x3498DB
+    embed.title = "KAG Stats Leaderboard"
+    embed.description = f"**{embed_description}**"
+    for item in data:
+        user_info = (f"**Name:** {item['clan_tag'][:256]} "
+                     f"{item['character_name'][:256]}\n"
+                     f"**Username**: {item['username'][:256]}\n"
+                     f"**KDR**: {item['kdr']}\n"
+                     f"**Kills**: {item['kills']}\n"
+                     f"**Deaths**: {item['deaths']}\n")
+        embed.add_field(name = f"{item['position']}:",
+                        value = user_info, inline = False)
+
+    return embed

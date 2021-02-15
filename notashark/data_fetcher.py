@@ -190,6 +190,66 @@ def kagstats_fetcher(player):
     log.debug(f"Got following data: {data}")
     return data
 
+def leaderboard_fetcher(scope):
+    '''Receives str(scope/type of leaderboard).
+    Trying to fetch related leaderboard from kagstats.
+    Returns list with names of 3 best players and description'''
+    #this is probably not the most optimal way to do things
+    #but if it works - it works
+    log.debug(f"Attempting to fetch kagstats leaderboard for {scope}")
+    if scope == 'kdr':
+        leaderboard = kagstats.leaderboard.global_kdr()
+        description = 'All Time KDR'
+    elif scope == 'kills':
+        leaderboard = kagstats.leaderboard.global_kills()
+        description = 'All Time Kills'
+    elif scope == 'global_archer':
+        leaderboard = kagstats.leaderboard.global_archer()
+        description = 'All Time Archer'
+    elif scope == 'monthly_archer':
+        leaderboard = kagstats.leaderboard.monthly_archer()
+        description = 'Monthly Archer'
+    elif scope == 'global_builder':
+        leaderboard = kagstats.leaderboard.global_builder()
+        description = 'All Time Builder'
+    elif scope == 'monthly_builder':
+        leaderboard = kagstats.leaderboard.monthly_builder()
+        description = 'Monthly Builder'
+    elif scope == 'global_knight':
+        leaderboard = kagstats.leaderboard.global_knight()
+        description = 'All Time Knight'
+    else:
+        #I probably shouldnt do it like that, but whatever - its 2 am
+        leaderboard = kagstats.leaderboard.monthly_knight()
+        description = 'Monthly Knight'
+
+    #this should already go sorted, no need to do anything manually
+    data = []
+    for item in (leaderboard[0:3]):
+        userdata = {}
+        userdata['username'] = item['player']['username']
+        userdata['character_name'] = item['player']['characterName']
+        userdata['clan_tag'] = item['player']['clanTag']
+        if scope in ('kdr', 'kills'):
+            userdata['kills'] = item['totalKills']
+            userdata['deaths'] = item['totalDeaths']
+        elif scope in ('global_archer', 'monthly_archer'):
+            userdata['kills'] = item['archerKills']
+            userdata['deaths'] = item['archerDeaths']
+        elif scope in ('global_builder', 'monthly_builder'):
+            userdata['kills'] = item['builderKills']
+            userdata['deaths'] = item['builderDeaths']
+        else:
+            #I probably shouldnt do like that either
+            #But still - assuming that whatever left is knight stuff
+            userdata['kills'] = item['knightKills']
+            userdata['deaths'] = item['knightDeaths']
+        userdata['kdr'] = "%.2f" % (userdata['kills'] / userdata['deaths'])
+        data.append(userdata)
+
+    log.debug(f"Got following data: {data}, {description}")
+    return data, description
+
 #Stuff below is ugly as hell, but idk how to make it better
 #I mean - I could keep the class route
 #but it would re-introduce all the issues I tried to solve

@@ -175,8 +175,41 @@ async def kagstats(ctx, *args):
                                 "exists and you didnt misspell their name or id?")
         log.info(f"Got exception while trying to answer {ctx.author} with info of player {player}: {e}")
     else:
-        await ctx.send(content=None, embed=infobox)
+        await ctx.channel.send(content=None, embed=infobox)
         log.info(f"{ctx.author} has asked for player info of {player}. Responded")
+
+@bot.command()
+async def leaderboard(ctx, *args):
+    if not args:
+        await ctx.channel.send("This command requires leaderboard type. "
+                              f"For example: `{BOT_PREFIX}leaderboard kdr`\n"
+                               "Available types are the following:\n"
+                               " - kdr\n - kills\n - monthly archer\n"
+                               " - monthly builder\n - monthly knight\n"
+                               " - global archer\n - global builder\n - global knight")
+        log.info(f"{ctx.author} has asked for leaderboard, but didnt specify type")
+        return
+
+    if args[0] in ('kills', 'kdr'):
+        prefix = args[0]
+    elif (len(args) >= 2 and
+          args[0] in ('global', 'monthly') and
+          args[1] in ('archer', 'builder', 'knight')):
+        prefix = '_'.join(args[0:2])
+
+    try:
+        infobox = embeds_processor.leaderboard_embed(prefix)
+    except UnboundLocalError:
+        await ctx.channel.send("Couldnt find such leaderboard. "
+                               "Please, double-check the prefix and try again")
+        log.info(f"{ctx.author} has asked for leaderboard, but misspelled prefix")
+    except Exception as e:
+        await ctx.channel.send("Unable to fetch leaderboard right now. "
+                               "Please, try again later")
+        log.info(f"Got exception while trying to answer {ctx.author} with leaderboard: {e}")
+    else:
+        await ctx.channel.send(content=None, embed=infobox)
+        log.info(f"{ctx.author} has asked for leaderboard. Responded")
 
 @bot.command()
 async def help(ctx):
@@ -184,12 +217,15 @@ async def help(ctx):
     await ctx.channel.send(
     f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
      "Currently there are following custom commands available:\n"
-    f"`{BOT_PREFIX}info IP:port` - will display detailed info of "
+    f"`{BOT_PREFIX}info *IP:port*` - will display detailed info of "
      "selected server, including description and in-game minimap\n"
-    f"`{BOT_PREFIX}kagstats player` - will display gameplay statistics "
+    f"`{BOT_PREFIX}kagstats *player*` - will display gameplay statistics "
      "of player with provided kagstats id or username\n"
     f"`{BOT_PREFIX}serverlist` - will display list of active servers with "
      "their base info, aswell as their total population numbers\n"
+    f"`{BOT_PREFIX}leaderboard *type*` - will display top-3 players in this "
+     "category of kagstats leaderboard. To get list of available types - just "
+    f"type `{BOT_PREFIX}leaderboard`, without specifying anything afterwards\n"
     f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel "
     f"to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. "
      "Keep in mind that you must be guild's admin to use it!\n"
