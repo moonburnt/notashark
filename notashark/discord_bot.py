@@ -97,14 +97,37 @@ async def on_guild_available(ctx):
     log.debug(f"Checking if bot knows about this guild")
     settings_fetcher.settings_checker(ctx.id) #mybe rewrite this? idk
 
-@bot.command()
+#this is an easier way to do "server" prefix without massive 'if/else's afterwards
+@bot.group(name = "server", invoke_without_command = True)
+async def server_group(ctx):
+    await ctx.channel.send("This command requires you to specify which type "
+                           "of servers-related info you want to get. Valid "
+                           "options are:\n`list` - to get list of currently active "
+                           "servers\n`info *ip:port*` - to get detailed information "
+                           "of some specific server (including minimap)")
+    log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
+    return
+
+@server_group.command(name = "list")
+async def serverlist(ctx):
+    try:
+        infobox = embeds_processor.serverlist_embed()
+    except Exception as e:
+        await ctx.channel.send(f"Something went wrong...")
+        log.error("An unfortunate exception has occured while "
+                 f"trying to send serverlist: {e}")
+    else:
+        await ctx.channel.send(content=None, embed=infobox)
+        log.info(f"{ctx.author} has asked for serverlist. Responded")
+
+@server_group.command(name = "info")
 async def info(ctx, *args):
     try:
         server_address = args[0]
         ip, port = server_address.split(":")
     except:
         await ctx.channel.send("This command requires server IP and port to work."
-                              f"For example: `{BOT_PREFIX}info 8.8.8.8:80`")
+                              f"For example: `{BOT_PREFIX}server info 8.8.8.8:80`")
         log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
         return
 
@@ -146,18 +169,6 @@ async def set(ctx, *args):
     else:
         await ctx.channel.send("Unable to process your request: please double-check "
                                "syntax and your permissions on this guild")
-
-@bot.command()
-async def serverlist(ctx):
-    try:
-        infobox = embeds_processor.serverlist_embed()
-    except Exception as e:
-        await ctx.channel.send(f"Something went wrong...")
-        log.error("An unfortunate exception has occured while "
-                 f"trying to send serverlist: {e}")
-    else:
-        await ctx.channel.send(content=None, embed=infobox)
-        log.info(f"{ctx.author} has asked for serverlist. Responded")
 
 @bot.command()
 async def kagstats(ctx, *args):
@@ -217,12 +228,12 @@ async def help(ctx):
     await ctx.channel.send(
     f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
      "Currently there are following custom commands available:\n"
-    f"`{BOT_PREFIX}info *IP:port*` - will display detailed info of "
+    f"`{BOT_PREFIX}server list` - will display list of active servers with "
+     "their base info, aswell as their total population numbers\n"
+    f"`{BOT_PREFIX}server info *IP:port*` - will display detailed info of "
      "selected server, including description and in-game minimap\n"
     f"`{BOT_PREFIX}kagstats *player*` - will display gameplay statistics "
      "of player with provided kagstats id or username\n"
-    f"`{BOT_PREFIX}serverlist` - will display list of active servers with "
-     "their base info, aswell as their total population numbers\n"
     f"`{BOT_PREFIX}leaderboard *type*` - will display top-3 players in this "
      "category of kagstats leaderboard. To get list of available types - just "
     f"type `{BOT_PREFIX}leaderboard`, without specifying anything afterwards\n"

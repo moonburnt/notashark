@@ -60,10 +60,11 @@ def single_server_embed(ip, port):
     log.debug(f"Building single server embed")
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
-    embed.title = data['name'][:256]
+    embed.title = "KAG Server Info"
     #Idk the correct maximum allowed size of embed field's value.
     #Someone has told that its 1024, but I will use 256
     #to avoid overcoming max allowed size of embed itself.
+    embed.add_field(name="Name:", value=data['name'][:256], inline = False)
     embed.add_field(name="Description:",
                     value=data['description'][:256],
                     inline=False)
@@ -88,16 +89,18 @@ def serverlist_embed():
     log.debug(f"Building serverlist embed")
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
-    embed_title = (f"There are currently {raw_data['servers_amount']} active "
-                   f"servers with {raw_data['total_players_amount']} players")
-    embed_description = "**Featuring:**"
+    embed_title = "KAG Server List"
+    embed_overview = (f"**Current Amount of Players:** {raw_data['total_players_amount']}\n"
+                      f"**Currently Active Servers:** {raw_data['servers_amount']}\n")
 
     log.debug(f"Adding servers to message")
-    embed_fields_amount = 0
-    message_len = len(embed_title)+len(embed_description)
+    embed.add_field(name = "Overview:", value = embed_overview, inline = False)
+    embed_fields_amount = 1
+    message_len = len(embed_title)+len(embed_overview)
     leftowers_counter = 0
     #this looks ugly as hell, maybe I should do something about it in future
     for server in raw_data['servers']:
+
         if embed_fields_amount < 25:
             embed_fields_amount += 1
             data = sanitizer(server)
@@ -117,8 +120,7 @@ def serverlist_embed():
             if field_lengh <= 1024 and (future_message_lengh < 6000):
                 message_len += field_lengh + title_lengh
                 embed.add_field(name = field_title[:256],
-                                value = field_content,
-                                inline = False)
+                                value = field_content, inline = False)
             else:
                 leftowers_counter += 1
         else:
@@ -129,7 +131,6 @@ def serverlist_embed():
         embed.add_field(name = field_name, inline=False)
 
     embed.title = embed_title
-    embed.description = embed_description
 
     return embed
 
@@ -148,8 +149,8 @@ def kagstats_embed(player):
                     "**KAG Stats**: "
                    f"<https://kagstats.com/#/players/{data['id']}>")
 
-    positive_stats = (f"**Total KDR**: {data['total_kdr']}\n"
-                      f"**Total Kills**: {data['total_kills']}\n"
+    positive_stats = (f"**KDR**: {data['total_kdr']}\n"
+                      f"**Kills**: {data['total_kills']}\n"
                       f"**Flags Captured**: {data['captures']}")
 
     negative_stats = (f"**Team Kills**: {data['team_kills']}\n"
@@ -178,13 +179,13 @@ def kagstats_embed(player):
     #if user has no avatar set - this wont do anything
     embed.set_thumbnail(url=data['avatar'])
     embed.title = "KAG Stats: Profile"
-    embed.add_field(name = "User Info", value = player_info, inline = False)
-    embed.add_field(name = "Positive", value = positive_stats)
-    embed.add_field(name = "Negative", value = negative_stats)
-    embed.add_field(name = "Top Weapons", value = top_weapons)
-    embed.add_field(name = "Archer", value = archer_stats)
-    embed.add_field(name = "Builder", value = builder_stats)
-    embed.add_field(name = "Knight", value = knight_stats)
+    embed.add_field(name = "User Info:", value = player_info, inline = False)
+    embed.add_field(name = "Total Positive:", value = positive_stats)
+    embed.add_field(name = "Total Negative:", value = negative_stats)
+    embed.add_field(name = "Top Weapons:", value = top_weapons)
+    embed.add_field(name = "Archer Stats:", value = archer_stats)
+    embed.add_field(name = "Builder Stats:", value = builder_stats)
+    embed.add_field(name = "Knight Stats:", value = knight_stats)
 
     return embed
 
