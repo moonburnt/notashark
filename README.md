@@ -6,6 +6,20 @@
 
 **notashark** -  discord bot for King Arthur's Gold, written in python + pykagapi + discord.py. Its designed to be able to run on multiple discord guilds at once, feature ability to setup some per-guild settings via chat commands (and save them between bot's sessions in simple json file) and be able to display all major information related to the game.
 
+## Screenshots:
+
+### Self-Updating Server List:
+
+![Self-Updating Server List](https://i.fiery.me/oHYFM.png?raw=true)
+
+### KAG Stats Profile Showcase:
+
+![KAG Stats Profile Showcase](https://i.fiery.me/OJ5wK.png?raw=true)
+
+### KAG Stats Leaderboard Showcase:
+
+![KAG Stats Leaderboard Showcase](https://i.fiery.me/QlR52.png?raw=true)
+
 ## Dependencies:
 
 - python 3.8 (may work on previous versions)
