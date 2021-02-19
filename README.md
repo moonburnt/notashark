@@ -39,7 +39,7 @@ This will run bot in its default configuration, suitable for most needs.
 ### Advanced:
 - `./run_notashark -h` to get full list of available launch flags
 - Manually setup 'NOTASHARK_DISCORD_KEY' environment variable to match your bot's discord token
-- ALTERNATIVELY: pass your discord bot's token as `--token launch argument`
+- ALTERNATIVELY: pass your discord bot's token as `--token` launch argument
 - `./run_notashark` with whatever flags you want
 
 ## LICENSE:
