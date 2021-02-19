@@ -240,5 +240,13 @@ async def help(ctx):
     f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel "
     f"to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. "
      "Keep in mind that you must be guild's admin to use it!\n"
+    f"`{BOT_PREFIX}help` - shows this message\n"
+    f"`{BOT_PREFIX}about` - displays bot's description and other usefull info"
     )
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
+
+@bot.command()
+async def about(ctx):
+    infobox = embeds_processor.about_embed()
+    await ctx.channel.send(content=None, embed=infobox)
+    log.info(f"{ctx.author} has asked for info about this bot. Responded")

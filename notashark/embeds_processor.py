@@ -18,9 +18,12 @@
 
 import logging
 from discord import utils, Embed, File
-from notashark import data_fetcher
+from notashark import data_fetcher, configuration
 from io import BytesIO
 from datetime import datetime
+
+BOT_NAME = configuration.BOT_NAME
+BOT_PREFIX = configuration.BOT_PREFIX
 
 log = logging.getLogger(__name__)
 
@@ -209,7 +212,7 @@ def leaderboard_embed(scope):
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed.title = "KAG Stats: Leaderboard"
-    embed.add_field(name = "Overview", value = leaderboard_info, inline = False)
+    embed.add_field(name = "Overview:", value = leaderboard_info, inline = False)
     for item in data:
         user_info = (f"**Name:** {item['clan_tag'][:256]} "
                      f"{item['character_name'][:256]}\n"
@@ -219,5 +222,30 @@ def leaderboard_embed(scope):
                      f"**Deaths**: {item['deaths']}\n")
         embed.add_field(name = f"{item['position']}:",
                         value = user_info, inline = False)
+
+    return embed
+
+def about_embed():
+    '''Returns embed with info about bot's author, github url and other stuff'''
+    log.debug("Preparing 'about' embed")
+
+    about = (f"**{BOT_NAME}** - discord bot for King Arthur's Gold, written "
+    "in python + pykagapi + discord.py. Its designed to be able to run on multiple "
+    "discord guilds at once, feature ability to setup some per-guild settings "
+    "via chat commands (and save them between bot's sessions in simple json file) "
+    "and be able to display all major information related to the game. \nThis bot "
+    "is completely free and opensource: if you want to run your own instance or "
+    "contribute to development - just visit bot's development page listed below")
+
+    how_to = f"Just type **{BOT_PREFIX}help** in chat to get list of all available commands"
+
+    url = "<https://github.com/moonburnt/notashark>"
+
+    embed = Embed(timestamp=datetime.utcnow())
+    embed.colour = 0x3498DB
+    embed.title = "About Bot"
+    embed.add_field(name = "Overview:", value = about, inline = False)
+    embed.add_field(name = "How to Use:", value = how_to, inline = False)
+    embed.add_field(name = "Development Page:", value = url, inline = False)
 
     return embed
