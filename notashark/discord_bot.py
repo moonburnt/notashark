@@ -134,7 +134,7 @@ async def info(ctx, *args):
     try:
         infobox, minimap = embeds_processor.single_server_embed(ip, port)
     except Exception as e:
-        await ctx.channel.send(f"Couldnt find `{server_address}`. Are you sure "
+        await ctx.channel.send(f"Couldnt find such server. Are you sure "
                                 "the address is correct and server is up and running?")
         log.info(f"Got exception while trying to answer {ctx.author} "
                  f"with info of {server_address}: {e}")
@@ -182,12 +182,13 @@ async def kagstats(ctx, *args):
     try:
         infobox = embeds_processor.kagstats_embed(player)
     except Exception as e:
-        await ctx.channel.send(f"Couldnt find `{player}`. Are you sure this player "
-                                "exists and you didnt misspell their name or id?")
+        await ctx.channel.send(f"Couldnt find such player. Are you sure this player "
+                                "exists and you didnt misspell their name or kagstats id?")
         log.info(f"Got exception while trying to answer {ctx.author} with info of player {player}: {e}")
     else:
         await ctx.channel.send(content=None, embed=infobox)
-        log.info(f"{ctx.author} has asked for player info of {player}. Responded")
+        log.info(f"{ctx.author} has asked for player info of {player} on "
+                 f"{ctx.guild.id}/{ctx.channel.id}. Responded")
 
 @bot.command()
 async def leaderboard(ctx, *args):
@@ -220,7 +221,7 @@ async def leaderboard(ctx, *args):
         log.info(f"Got exception while trying to answer {ctx.author} with leaderboard: {e}")
     else:
         await ctx.channel.send(content=None, embed=infobox)
-        log.info(f"{ctx.author} has asked for leaderboard. Responded")
+        log.info(f"{ctx.author} has asked for leaderboard on {ctx.guild.id}/{ctx.channel.id}. Responded")
 
 @bot.command()
 async def help(ctx):
