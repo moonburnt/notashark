@@ -213,40 +213,49 @@ def kagstats_fetcher(player):
     return data
 
 def leaderboard_fetcher(scope):
-    '''Receives str(scope/type of leaderboard).
-    Trying to fetch related leaderboard from kagstats.
-    Returns list with names of 3 best players and description'''
+    '''Receives str(scope/type of leaderboard). Trying to fetch related
+    leaderboard from kagstats. Returns dictionary containing leaderboard type,
+    kagstats url of that leaderboard and list with its top-3 players'''
     #this is probably not the most optimal way to do things
     #but if it works - it works
     log.debug(f"Attempting to fetch kagstats leaderboard for {scope}")
+    url = "https://kagstats.com/#/leaderboards"
     if scope == 'kdr':
         leaderboard = kagstats.leaderboard.global_kdr()
         description = 'Total KDR'
+        url = "Hidden"
     elif scope == 'kills':
         leaderboard = kagstats.leaderboard.global_kills()
         description = 'Total Kills'
+        url = "Hidden"
     elif scope == 'global_archer':
         leaderboard = kagstats.leaderboard.global_archer()
         description = 'All Time Archer'
+        url += "/Archer"
     elif scope == 'monthly_archer':
         leaderboard = kagstats.leaderboard.monthly_archer()
         description = 'Monthly Archer'
+        url += '/MonthlyArcher'
     elif scope == 'global_builder':
         leaderboard = kagstats.leaderboard.global_builder()
         description = 'All Time Builder'
+        url += "/Builder"
     elif scope == 'monthly_builder':
         leaderboard = kagstats.leaderboard.monthly_builder()
         description = 'Monthly Builder'
+        url += '/MonthlyBuilder'
     elif scope == 'global_knight':
         leaderboard = kagstats.leaderboard.global_knight()
         description = 'All Time Knight'
+        url += "/Knight"
     else:
         #I probably shouldnt do it like that, but whatever - its 2 am
         leaderboard = kagstats.leaderboard.monthly_knight()
         description = 'Monthly Knight'
+        url += '/MonthlyKnight'
 
     #this should already go sorted, no need to do that manually
-    data = []
+    players = []
     for item in (leaderboard[0:3]):
         userdata = {}
         userdata['username'] = item['player']['username']
@@ -267,10 +276,15 @@ def leaderboard_fetcher(scope):
             userdata['kills'] = item['knightKills']
             userdata['deaths'] = item['knightDeaths']
         userdata['kdr'] = "%.2f" % (userdata['kills'] / userdata['deaths'])
-        data.append(userdata)
+        players.append(userdata)
 
-    log.debug(f"Got following data: {data}, {description}")
-    return data, description
+    data = {}
+    data['description'] = description
+    data['url'] = url
+    data['players'] = players
+
+    log.debug(f"Got following data: {data}")
+    return data
 
 #Stuff below is ugly as hell, but idk how to make it better
 #I mean - I could keep the class route

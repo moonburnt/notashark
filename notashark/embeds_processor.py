@@ -179,7 +179,7 @@ def kagstats_embed(player):
     #if user has no avatar set - this wont do anything
     embed.set_thumbnail(url=data['avatar'])
     embed.title = "KAG Stats: Profile"
-    embed.add_field(name = "User Info:", value = player_info, inline = False)
+    embed.add_field(name = "Overview:", value = player_info, inline = False)
     embed.add_field(name = "Total Positive:", value = positive_stats)
     embed.add_field(name = "Total Negative:", value = negative_stats)
     embed.add_field(name = "Top Weapons:", value = top_weapons)
@@ -193,20 +193,23 @@ def leaderboard_embed(scope):
     '''Receive str with scope/type of leaderboard (e.g archer or monthly_archer).
     Returns embed with kagstats info of that category'''
     log.debug(f"Preparing embed for leaderboard {scope}")
-    raw_data, embed_description = data_fetcher.leaderboard_fetcher(scope)
+    raw_data = data_fetcher.leaderboard_fetcher(scope)
 
     data = []
     positions = ['First', 'Second', 'Third']
-    for item, position in zip(raw_data, positions):
+    for item, position in zip(raw_data['players'], positions):
         clean_item = sanitizer(item)
         clean_item['position'] = position
         data.append(clean_item)
 
     log.debug(f"Building leaderboard embed")
+    leaderboard_info = (f"**Leaderboard:** {raw_data['description']}\n"
+                        f"**KAG Stats URL:** <{raw_data['url']}>")
+
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed.title = "KAG Stats: Leaderboard"
-    embed.description = f"**{embed_description}**"
+    embed.add_field(name = "Overview", value = leaderboard_info, inline = False)
     for item in data:
         user_info = (f"**Name:** {item['clan_tag'][:256]} "
                      f"{item['character_name'][:256]}\n"
