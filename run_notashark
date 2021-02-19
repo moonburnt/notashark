@@ -35,6 +35,9 @@ handler.setFormatter(logging.Formatter(fmt='[%(asctime)s][%(name)s][%(levelname)
 log.addHandler(handler)
 
 ap = argparse.ArgumentParser()
+ap.add_argument("--token",
+    help="Alternative way to supply your token to bot, in case envars arent available",
+    type=str)
 ap.add_argument("--debug", help=f"Add debug messages to {BOT_NAME}'s output", action="store_true")
 ap.add_argument("--serverlist-update-time",
     help="Custom lengh (in seconds) of pause between requests to api in order "
@@ -50,12 +53,16 @@ args = ap.parse_args()
 if args.debug:
     log.setLevel(logging.DEBUG)
 
-try:
-    BOT_TOKEN = environ['NOTASHARK_DISCORD_KEY']
-except KeyError:
-    log.critical("NOTASHARK_DISCORD_KEY environment variable isnt set. "
-                 "Edit bootin_up.sh accordingly, or set it up manually.\nAbort")
-    exit(1)
+if args.token:
+    BOT_TOKEN = args.token
+else:
+    try:
+        BOT_TOKEN = environ['NOTASHARK_DISCORD_KEY']
+    except KeyError:
+        log.critical("You didnt specify your discord bot's token! Please, either "
+                     "set NOTASHARK_DISCORD_KEY environment variable, or pass it "
+                     "via --token launch argument!\nAbort")
+        exit(1)
 
 if (args.serverlist_update_time and
    (args.serverlist_update_time > DEFAULT_SERVERLIST_UPDATE_TIME)):

@@ -4,11 +4,7 @@
 
 ## Description:
 
-Well, its a small discord bot for King Arthur's Gold, written in python + discord.py. Its able to run on multiple discord guilds at once, has self-updating serverlist (and ability to set it up with just one chat command), supports settings autosaving to json and can showcase player's kagstats information. And thats not all! And more to come!
-
-![Self-updating serverlist](https://i.fiery.me/Pjr9r.png?raw=true)
-
-![Player's kagstats info showcase](https://i.fiery.me/xI6mh.png?raw=true)
+**notashark** -  discord bot for King Arthur's Gold, written in python + pykagapi + discord.py. Its designed to be able to run on multiple discord guilds at once, feature ability to setup some per-guild settings via chat commands (and save them between bot's sessions in simple json file) and be able to display all major information related to the game.
 
 ## Dependencies:
 
@@ -27,8 +23,9 @@ Well, its a small discord bot for King Arthur's Gold, written in python + discor
 This will run bot in its default configuration, suitable for most needs.
 
 ### Advanced:
-- Manually setup 'NOTASHARK_DISCORD_KEY' environment variable to match your bot's discord token
 - `./run_notashark -h` to get full list of available launch flags
+- Manually setup 'NOTASHARK_DISCORD_KEY' environment variable to match your bot's discord token
+- ALTERNATIVELY: pass your discord bot's token as `--token launch argument`
 - `./run_notashark` with whatever flags you want
 
 ## LICENSE:
