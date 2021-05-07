@@ -56,12 +56,20 @@ def single_server_embed(ip, port):
 
     log.debug(f"Getting minimap")
     mm = BytesIO(raw_data['minimap'])
-    minimap = File(mm, filename="minimap.png")
+
+    utc_time = datetime.utcnow()
+    timestamp = utc_time.timestamp()
+
+    #This is a nasty workaround to fix the discord's "clever" caching issue
+    #Basically - if filename stays the same, sometimes discord decides to show
+    #the older image instead of never. Which cause minimap to never update
+    filename = f"{timestamp}_minimap.png"
+    minimap = File(mm, filename=filename)
 
     data = sanitizer(raw_data)
 
     log.debug(f"Building single server embed")
-    embed = Embed(timestamp=datetime.utcnow())
+    embed = Embed(timestamp=utc_time)
     embed.colour = 0x3498DB
     embed.title = "KAG Server Info"
     #Idk the correct maximum allowed size of embed field's value.
@@ -80,7 +88,7 @@ def single_server_embed(ip, port):
                     value=data['nicknames'][:1024],
                     inline=False)
 
-    embed.set_image(url="attachment://minimap.png")
+    embed.set_image(url=f"attachment://{filename}")
 
     return embed, minimap
 
