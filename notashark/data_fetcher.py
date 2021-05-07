@@ -186,8 +186,8 @@ def kagstats_fetcher(player):
     data = {}
     data['id'] = player_id
     data['username'] = raw_data['player']['username']
-    data['character_name'] = raw_data['player']['characterName']
-    data['clan_tag'] = raw_data['player']['clanTag']
+    data['character_name'] = raw_data['player']['charactername']
+    data['clan_tag'] = raw_data['player']['clantag']
     data['avatar'] = raw_data['player']['avatar']
     data['suicides'] = raw_data['suicides']
     data['team_kills'] = raw_data['teamKills']
@@ -259,8 +259,8 @@ def leaderboard_fetcher(scope):
     for item in (leaderboard[0:3]):
         userdata = {}
         userdata['username'] = item['player']['username']
-        userdata['character_name'] = item['player']['characterName']
-        userdata['clan_tag'] = item['player']['clanTag']
+        userdata['character_name'] = item['player']['charactername']
+        userdata['clan_tag'] = item['player']['clantag']
         if scope in ('kdr', 'kills'):
             userdata['kills'] = item['totalKills']
             userdata['deaths'] = item['totalDeaths']
