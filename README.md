@@ -1,5 +1,3 @@
-*This started as shark-v2 clone*
-
 # notashark
 
 ## Description:
@@ -14,24 +12,12 @@ to the game, including:
 - Kagstats profile info
 - Kagstats leaderboards
 
+You can see some usage screenshots in [screenshots](/screenshots).
+
 ## Development Status:
 
 This bot is considered to be feature-complete. There may be some small fixes and
 improvements, but for the most - bot is already done and ready for daily usage
-
-## Screenshots:
-
-### Self-Updating Server List:
-
-![Self-Updating Server List](https://i.fiery.me/oHYFM.png?raw=true)
-
-### KAG Stats Profile Showcase:
-
-![KAG Stats Profile Showcase](https://i.fiery.me/OJ5wK.png?raw=true)
-
-### KAG Stats Leaderboard Showcase:
-
-![KAG Stats Leaderboard Showcase](https://i.fiery.me/QlR52.png?raw=true)
 
 ## Dependencies:
 
