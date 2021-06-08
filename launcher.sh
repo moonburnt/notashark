@@ -17,4 +17,4 @@ fi
 export NOTASHARK_DISCORD_KEY
 
 chmod +x "$botpath/$botname"
-"$botpath/$botname"
+exec "$botpath/$botname"
