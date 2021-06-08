@@ -20,22 +20,18 @@ import discord
 from notashark import data_fetcher, settings_fetcher, configuration, embeds_processor
 from asyncio import sleep
 import logging
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 log = logging.getLogger(__name__)
-
-BOT_NAME = configuration.BOT_NAME
-BOT_PREFIX = configuration.BOT_PREFIX
-SERVERLIST_UPDATE_TIME = configuration.SERVERLIST_UPDATE_TIME
-SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
 async def status_updater():
     '''Updates current bot's status'''
     raw_data = data_fetcher.kag_servers
     if raw_data and (int(raw_data['total_players_amount']) > 0):
-        message = f"with {raw_data['total_players_amount']} peasants | {BOT_PREFIX}help"
+        message = (f"with {raw_data['total_players_amount']} peasants | "
+                   f"{configuration.BOT_PREFIX}help")
     else:
-        message = f"alone | {BOT_PREFIX}help"
+        message = f"alone | {configuration.BOT_PREFIX}help"
 
     await bot.change_presence(activity=discord.Game(name=message))
 
@@ -75,21 +71,32 @@ async def serverlist_autoupdater():
         await message.edit(content=None, embed=infobox)
         log.info(f"Successfully updated serverlist on {channel.id}/{message.id}")
 
-bot = commands.Bot(command_prefix=BOT_PREFIX)
+bot = commands.Bot(command_prefix = configuration.BOT_PREFIX)
 converter = commands.TextChannelConverter()
 #removing default help, coz its easier to make a new one than to rewrite a template
 bot.remove_command('help')
 
 @bot.event
 async def on_ready():
-    log.info(f'Running {BOT_NAME} as {bot.user}!')
-    while True:
-        #sleeping before task to let statistics populate on bot's launch
-        await sleep(SERVERLIST_UPDATE_TIME)
-        log.debug(f"Updating serverlists")
-        await serverlist_autoupdater()
-        log.debug(f"Updating bot's status")
-        await status_updater()
+    log.info(f'Running {configuration.BOT_NAME} as {bot.user}!')
+    #I've been told that its actually not recommended to do it from here, but
+    #since this bot is ancient classless mess - I would need to rewrite majority
+    #of it, to do things right. Maybe someday #TODO
+    log.debug(f"Launching stats autoupdater")
+    update_everything.start()
+
+#amount of time is pause between tasks, NOT time before task dies
+@tasks.loop(seconds = configuration.SERVERLIST_UPDATE_TIME)
+async def update_everything():
+    log.debug(f"Updating serverlists")
+    await serverlist_autoupdater()
+    log.debug(f"Updating bot's status")
+    await status_updater()
+
+#ensuring that updater only runs if bot is ready
+@update_everything.before_loop
+async def before_updating():
+    await bot.wait_until_ready()
 
 @bot.event
 async def on_guild_available(ctx):
@@ -127,7 +134,8 @@ async def info(ctx, *args):
         ip, port = server_address.split(":")
     except:
         await ctx.channel.send("This command requires server IP and port to work."
-                              f"For example: `{BOT_PREFIX}server info 8.8.8.8:80`")
+                              f"For example: `{configuration.BOT_PREFIX}"
+                               "server info 8.8.8.8:80`")
         log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
         return
 
@@ -174,7 +182,7 @@ async def set(ctx, *args):
 async def kagstats(ctx, *args):
     if not args:
         await ctx.channel.send("This command requires player name or id to be supplied. "
-                              f"For example: `{BOT_PREFIX}kagstats bunnie`")
+                              f"For example: `{configuration.BOT_PREFIX}kagstats bunnie`")
         log.info(f"{ctx.author} has asked for player info, but misspelled prefix")
         return
 
@@ -194,7 +202,7 @@ async def kagstats(ctx, *args):
 async def leaderboard(ctx, *args):
     if not args:
         await ctx.channel.send("This command requires leaderboard type. "
-                              f"For example: `{BOT_PREFIX}leaderboard kdr`\n"
+                              f"For example: `{configuration.BOT_PREFIX}leaderboard kdr`\n"
                                "Available types are the following:\n"
                                " - kdr\n - kills\n - monthly archer\n"
                                " - monthly builder\n - monthly knight\n"
@@ -227,22 +235,23 @@ async def leaderboard(ctx, *args):
 async def help(ctx):
     #I thought about remaking it into embed, but it looks ugly this way
     await ctx.channel.send(
-    f"Hello, Im {BOT_NAME} bot and Im there to assist you with all King Arthur's Gold needs!\n\n"
+    f"Hello, Im {configuration.BOT_NAME} bot and Im there to assist you with all "
+     "King Arthur's Gold needs!\n\n"
      "Currently there are following custom commands available:\n"
-    f"`{BOT_PREFIX}server list` - will display list of active servers with "
-     "their base info, aswell as their total population numbers\n"
-    f"`{BOT_PREFIX}server info *IP:port*` - will display detailed info of "
-     "selected server, including description and in-game minimap\n"
-    f"`{BOT_PREFIX}kagstats *player*` - will display gameplay statistics "
-     "of player with provided kagstats id or username\n"
-    f"`{BOT_PREFIX}leaderboard *type*` - will display top-3 players in this "
-     "category of kagstats leaderboard. To get list of available types - just "
-    f"type `{BOT_PREFIX}leaderboard`, without specifying anything afterwards\n"
-    f"`{BOT_PREFIX}set autoupdate channel #channel_id` - will set passed channel "
-    f"to auto-fetch serverlist each {SERVERLIST_UPDATE_TIME} seconds. "
-     "Keep in mind that you must be guild's admin to use it!\n"
-    f"`{BOT_PREFIX}help` - shows this message\n"
-    f"`{BOT_PREFIX}about` - displays bot's description and other usefull info"
+    f"`{configuration.BOT_PREFIX}server list` - will display list of active servers "
+     "with their base info, aswell as their total population numbers\n"
+    f"`{configuration.BOT_PREFIX}server info *IP:port*` - will display detailed "
+     "info of selected server, including description and in-game minimap\n"
+    f"`{configuration.BOT_PREFIX}kagstats *player*` - will display gameplay "
+     "statistics of player with provided kagstats id or username\n"
+    f"`{configuration.BOT_PREFIX}leaderboard *type*` - will display top-3 players "
+     "in this category of kagstats leaderboard. To get list of available types - "
+    f"just type `{configuration.BOT_PREFIX}leaderboard`, without specifying anything\n"
+    f"`{configuration.BOT_PREFIX}set autoupdate channel #channel_id` - will set "
+    f"passed channel to auto-fetch serverlist each {configuration.SERVERLIST_UPDATE_TIME} "
+     "seconds. Keep in mind that you must be guild's admin to use it!\n"
+    f"`{configuration.BOT_PREFIX}help` - shows this message\n"
+    f"`{configuration.BOT_PREFIX}about` - shows general bot's info"
     )
     log.info(f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded")
 
