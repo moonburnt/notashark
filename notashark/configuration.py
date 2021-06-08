@@ -24,3 +24,4 @@ SERVERLIST_UPDATE_TIME = 30
 #updating settings file each 5 minutes
 SETTINGS_AUTOSAVE_TIME = 300
 SETTINGS_FILE = join('.', 'settings.json')
+LOG_FILE = f"{BOT_NAME}.log"
