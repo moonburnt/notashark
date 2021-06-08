@@ -22,9 +22,6 @@ from notashark import data_fetcher, configuration
 from io import BytesIO
 from datetime import datetime
 
-BOT_NAME = configuration.BOT_NAME
-BOT_PREFIX = configuration.BOT_PREFIX
-
 log = logging.getLogger(__name__)
 
 def sanitizer(raw_data):
@@ -36,12 +33,22 @@ def sanitizer(raw_data):
         try:
             nomark = utils.escape_markdown(value)
             nomen = utils.escape_mentions(nomark)
-            clean_data.append((key, nomen))
+            #clean_data.append((key, nomen))
         #avoiding issue with trying to apply string method to minimap's bytes
         except TypeError:
-            clean_data.append((key, value))
+            nomen = value
+            #clean_data.append((key, value))
         except Exception as e:
             log.warning(f"Unable to sanitize dictionary: {e}")
+
+        #avoiding issue with embed crashing on empty description
+        if not nomen:
+            #planned to just make it empty, but I think "None" looks better
+            #nomen = "\u200b"
+            nomen = "None"
+
+        clean_data.append((key, nomen))
+
 
     data = dict(clean_data)
     log.debug(f"Sanitizer returned followed data: {data}")
@@ -237,15 +244,16 @@ def about_embed():
     '''Returns embed with info about bot's author, github url and other stuff'''
     log.debug("Preparing 'about' embed")
 
-    about = (f"**{BOT_NAME}** - discord bot for King Arthur's Gold, written "
-    "in python + pykagapi + discord.py. Its designed to be able to run on multiple "
+    about = (f"**{configuration.BOT_NAME}** - discord bot for King Arthur's Gold, "
+    "written in python + discord.py. Its designed to be able to run on multiple "
     "discord guilds at once, feature ability to setup some per-guild settings "
     "via chat commands (and save them between bot's sessions in simple json file) "
     "and be able to display all major information related to the game. \nThis bot "
     "is completely free and opensource: if you want to run your own instance or "
     "contribute to development - just visit bot's development page listed below")
 
-    how_to = f"Just type **{BOT_PREFIX}help** in chat to get list of all available commands"
+    how_to = (f"Just type **{configuration.BOT_PREFIX}help** in chat to get list "
+               "of all available commands")
 
     url = "<https://github.com/moonburnt/notashark>"
 
