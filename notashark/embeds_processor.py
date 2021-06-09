@@ -41,12 +41,6 @@ def sanitizer(raw_data):
         except Exception as e:
             log.warning(f"Unable to sanitize dictionary: {e}")
 
-        #avoiding issue with embed crashing on empty description
-        if not nomen:
-            #planned to just make it empty, but I think "None" looks better
-            #nomen = "\u200b"
-            nomen = "None"
-
         clean_data.append((key, nomen))
 
 
@@ -84,7 +78,7 @@ def single_server_embed(ip, port):
     #to avoid overcoming max allowed size of embed itself.
     embed.add_field(name="Name:", value=data['name'][:256], inline = False)
     embed.add_field(name="Description:",
-                    value=data['description'][:256],
+                    value=(data['description'][:256] or "None"),
                     inline=False)
     #maybe also include country's icon? idk
     embed.add_field(name="Location:", value=data['country_name'], inline=False)
