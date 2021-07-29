@@ -24,46 +24,47 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
+
 def sanitizer(raw_data):
-    '''Receives dictionary. Sanitizies its content to dont include anything
-    that could accidently break markdown or ping people. Then return dic back'''
+    """Receives dictionary. Sanitizies its content to dont include anything
+    that could accidently break markdown or ping people. Then return dic back"""
     log.debug(f"Attempting to sanitize {raw_data}")
     clean_data = []
     for key, value in raw_data.items():
         try:
             nomark = utils.escape_markdown(value)
             nomen = utils.escape_mentions(nomark)
-            #clean_data.append((key, nomen))
-        #avoiding issue with trying to apply string method to minimap's bytes
+            # clean_data.append((key, nomen))
+        # avoiding issue with trying to apply string method to minimap's bytes
         except TypeError:
             nomen = value
-            #clean_data.append((key, value))
+            # clean_data.append((key, value))
         except Exception as e:
             log.warning(f"Unable to sanitize dictionary: {e}")
 
         clean_data.append((key, nomen))
-
 
     data = dict(clean_data)
     log.debug(f"Sanitizer returned followed data: {data}")
 
     return data
 
+
 def single_server_embed(ip, port):
-    '''Receives ip and port, returns embed with server's
-    info and minimap file to attach to message'''
+    """Receives ip and port, returns embed with server's
+    info and minimap file to attach to message"""
     log.debug(f"Preparing embed for info of server with address {ip}:{port}")
     raw_data = data_fetcher.single_server_fetcher(ip, port)
 
     log.debug(f"Getting minimap")
-    mm = BytesIO(raw_data['minimap'])
+    mm = BytesIO(raw_data["minimap"])
 
     utc_time = datetime.utcnow()
     timestamp = utc_time.timestamp()
 
-    #This is a nasty workaround to fix the discord's "clever" caching issue
-    #Basically - if filename stays the same, sometimes discord decides to show
-    #the older image instead of never. Which cause minimap to never update
+    # This is a nasty workaround to fix the discord's "clever" caching issue
+    # Basically - if filename stays the same, sometimes discord decides to show
+    # the older image instead of never. Which cause minimap to never update
     filename = f"{timestamp}_minimap.png"
     minimap = File(mm, filename=filename)
 
@@ -73,28 +74,29 @@ def single_server_embed(ip, port):
     embed = Embed(timestamp=utc_time)
     embed.colour = 0x3498DB
     embed.title = "KAG Server Info"
-    #Idk the correct maximum allowed size of embed field's value.
-    #Someone has told that its 1024, but I will use 256
-    #to avoid overcoming max allowed size of embed itself.
-    embed.add_field(name="Name:", value=data['name'][:256], inline = False)
-    embed.add_field(name="Description:",
-                    value=(data['description'][:256] or "None"),
-                    inline=False)
-    #maybe also include country's icon? idk
-    embed.add_field(name="Location:", value=data['country_name'], inline=False)
-    embed.add_field(name="Link:", value=data['link'], inline=False)
-    embed.add_field(name="Game Mode:", value=data['mode'], inline=False)
-    embed.add_field(name="Players:", value=data['players'], inline=False)
-    embed.add_field(name="Currently Playing:",
-                    value=data['nicknames'][:1024],
-                    inline=False)
+    # Idk the correct maximum allowed size of embed field's value.
+    # Someone has told that its 1024, but I will use 256
+    # to avoid overcoming max allowed size of embed itself.
+    embed.add_field(name="Name:", value=data["name"][:256], inline=False)
+    embed.add_field(
+        name="Description:", value=(data["description"][:256] or "None"), inline=False
+    )
+    # maybe also include country's icon? idk
+    embed.add_field(name="Location:", value=data["country_name"], inline=False)
+    embed.add_field(name="Link:", value=data["link"], inline=False)
+    embed.add_field(name="Game Mode:", value=data["mode"], inline=False)
+    embed.add_field(name="Players:", value=data["players"], inline=False)
+    embed.add_field(
+        name="Currently Playing:", value=data["nicknames"][:1024], inline=False
+    )
 
     embed.set_image(url=f"attachment://{filename}")
 
     return embed, minimap
 
+
 def serverlist_embed():
-    '''Returns embed with list of all up and running kag servers'''
+    """Returns embed with list of all up and running kag servers"""
     log.debug(f"Preparing embed for serverlist")
     raw_data = data_fetcher.kag_servers
 
@@ -102,37 +104,42 @@ def serverlist_embed():
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed_title = "KAG Server List"
-    embed_overview = (f"**Current Amount of Players:** {raw_data['total_players_amount']}\n"
-                      f"**Currently Active Servers:** {raw_data['servers_amount']}\n")
+    embed_overview = (
+        f"**Current Amount of Players:** {raw_data['total_players_amount']}\n"
+        f"**Currently Active Servers:** {raw_data['servers_amount']}\n"
+    )
 
     log.debug(f"Adding servers to message")
-    embed.add_field(name = "Overview:", value = embed_overview, inline = False)
+    embed.add_field(name="Overview:", value=embed_overview, inline=False)
     embed_fields_amount = 1
-    message_len = len(embed_title)+len(embed_overview)
+    message_len = len(embed_title) + len(embed_overview)
     leftowers_counter = 0
-    #this looks ugly as hell, maybe I should do something about it in future
-    for server in raw_data['servers']:
+    # this looks ugly as hell, maybe I should do something about it in future
+    for server in raw_data["servers"]:
 
         if embed_fields_amount < 25:
             embed_fields_amount += 1
             data = sanitizer(server)
 
             field_title = f"\n**:flag_{data['country_prefix']}: {data['name']}**"
-            field_content = (f"\n**Address:** {data['link']}"
-                             f"\n**Game Mode:** {data['mode']}"
-                             f"\n**Players:** {data['players']}"
-                             f"\n**Currently Playing**: {data['nicknames']}")
+            field_content = (
+                f"\n**Address:** {data['link']}"
+                f"\n**Game Mode:** {data['mode']}"
+                f"\n**Players:** {data['players']}"
+                f"\n**Currently Playing**: {data['nicknames']}"
+            )
 
-            #This part isnt fair coz server with dozen players will be treated
-            #as low-populated. Also it looks like crap and needs to be reworked.
-            #TODO
+            # This part isnt fair coz server with dozen players will be treated
+            # as low-populated. Also it looks like crap and needs to be reworked.
+            # TODO
             field_lengh = len(field_content)
             title_lengh = len(field_title)
             future_message_lengh = field_lengh + title_lengh + message_len
             if field_lengh <= 1024 and (future_message_lengh < 6000):
                 message_len += field_lengh + title_lengh
-                embed.add_field(name = field_title[:256],
-                                value = field_content, inline = False)
+                embed.add_field(
+                    name=field_title[:256], value=field_content, inline=False
+                )
             else:
                 leftowers_counter += 1
         else:
@@ -140,122 +147,144 @@ def serverlist_embed():
 
     if leftowers_counter > 0:
         field_name = f"\n*And {leftowers_counter} less populated servers*"
-        embed.add_field(name = field_name, inline=False)
+        embed.add_field(name=field_name, inline=False)
 
     embed.title = embed_title
 
     return embed
 
+
 def kagstats_embed(player):
-    '''Receive str with player name or str/int with player id.
-    Returns embed with kagstats info of that player'''
+    """Receive str with player name or str/int with player id.
+    Returns embed with kagstats info of that player"""
     log.debug(f"Preparing embed for kagstats info of player {player}")
 
     raw_data = data_fetcher.kagstats_fetcher(player)
     data = sanitizer(raw_data)
 
     log.debug(f"Building kagstats info embed")
-    player_info = (f"**Name**: {data['clan_tag'][:256]} "
-                   f"{data['character_name'][:256]}\n"
-                   f"**Username**: {data['username']}\n"
-                    "**KAG Stats**: "
-                   f"<https://kagstats.com/#/players/{data['id']}>")
+    player_info = (
+        f"**Name**: {data['clan_tag'][:256]} "
+        f"{data['character_name'][:256]}\n"
+        f"**Username**: {data['username']}\n"
+        "**KAG Stats**: "
+        f"<https://kagstats.com/#/players/{data['id']}>"
+    )
 
-    positive_stats = (f"**KDR**: {data['total_kdr']}\n"
-                      f"**Kills**: {data['total_kills']}\n"
-                      f"**Flags Captured**: {data['captures']}")
+    positive_stats = (
+        f"**KDR**: {data['total_kdr']}\n"
+        f"**Kills**: {data['total_kills']}\n"
+        f"**Flags Captured**: {data['captures']}"
+    )
 
-    negative_stats = (f"**Team Kills**: {data['team_kills']}\n"
-                      f"**Deaths**: {data['total_deaths']}\n"
-                      f"**Suicides**: {data['suicides']}")
+    negative_stats = (
+        f"**Team Kills**: {data['team_kills']}\n"
+        f"**Deaths**: {data['total_deaths']}\n"
+        f"**Suicides**: {data['suicides']}"
+    )
 
-    archer_stats = (f"**KDR**: {data['archer_kdr']}\n"
-                    f"**Kills**: {data['archer_kills']}\n"
-                    f"**Deaths**: {data['archer_deaths']}")
+    archer_stats = (
+        f"**KDR**: {data['archer_kdr']}\n"
+        f"**Kills**: {data['archer_kills']}\n"
+        f"**Deaths**: {data['archer_deaths']}"
+    )
 
-    builder_stats = (f"**KDR**: {data['builder_kdr']}\n"
-                    f"**Kills**: {data['builder_kills']}\n"
-                    f"**Deaths**: {data['builder_deaths']}")
+    builder_stats = (
+        f"**KDR**: {data['builder_kdr']}\n"
+        f"**Kills**: {data['builder_kills']}\n"
+        f"**Deaths**: {data['builder_deaths']}"
+    )
 
-    knight_stats = (f"**KDR**: {data['knight_kdr']}\n"
-                    f"**Kills**: {data['knight_kills']}\n"
-                    f"**Deaths**: {data['knight_deaths']}")
+    knight_stats = (
+        f"**KDR**: {data['knight_kdr']}\n"
+        f"**Kills**: {data['knight_kills']}\n"
+        f"**Deaths**: {data['knight_deaths']}"
+    )
 
     top_weapons = ""
-    for item in data['top_weapons']:
+    for item in data["top_weapons"]:
         weapon_info = f"**{item['weapon']}**: {item['kills']} kills\n"
         top_weapons += weapon_info
 
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
-    #if user has no avatar set - this wont do anything
-    embed.set_thumbnail(url=data['avatar'])
+    # if user has no avatar set - this wont do anything
+    embed.set_thumbnail(url=data["avatar"])
     embed.title = "KAG Stats: Profile"
-    embed.add_field(name = "Overview:", value = player_info, inline = False)
-    embed.add_field(name = "Total Positive:", value = positive_stats)
-    embed.add_field(name = "Total Negative:", value = negative_stats)
-    embed.add_field(name = "Top Weapons:", value = top_weapons)
-    embed.add_field(name = "Archer Stats:", value = archer_stats)
-    embed.add_field(name = "Builder Stats:", value = builder_stats)
-    embed.add_field(name = "Knight Stats:", value = knight_stats)
+    embed.add_field(name="Overview:", value=player_info, inline=False)
+    embed.add_field(name="Total Positive:", value=positive_stats)
+    embed.add_field(name="Total Negative:", value=negative_stats)
+    embed.add_field(name="Top Weapons:", value=top_weapons)
+    embed.add_field(name="Archer Stats:", value=archer_stats)
+    embed.add_field(name="Builder Stats:", value=builder_stats)
+    embed.add_field(name="Knight Stats:", value=knight_stats)
 
     return embed
 
+
 def leaderboard_embed(scope):
-    '''Receive str with scope/type of leaderboard (e.g archer or monthly_archer).
-    Returns embed with kagstats info of that category'''
+    """Receive str with scope/type of leaderboard (e.g archer or monthly_archer).
+    Returns embed with kagstats info of that category"""
     log.debug(f"Preparing embed for leaderboard {scope}")
     raw_data = data_fetcher.leaderboard_fetcher(scope)
 
     data = []
-    positions = ['First', 'Second', 'Third']
-    for item, position in zip(raw_data['players'], positions):
+    positions = ["First", "Second", "Third"]
+    for item, position in zip(raw_data["players"], positions):
         clean_item = sanitizer(item)
-        clean_item['position'] = position
+        clean_item["position"] = position
         data.append(clean_item)
 
     log.debug(f"Building leaderboard embed")
-    leaderboard_info = (f"**Leaderboard:** {raw_data['description']}\n"
-                        f"**KAG Stats URL:** <{raw_data['url']}>")
+    leaderboard_info = (
+        f"**Leaderboard:** {raw_data['description']}\n"
+        f"**KAG Stats URL:** <{raw_data['url']}>"
+    )
 
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed.title = "KAG Stats: Leaderboard"
-    embed.add_field(name = "Overview:", value = leaderboard_info, inline = False)
+    embed.add_field(name="Overview:", value=leaderboard_info, inline=False)
     for item in data:
-        user_info = (f"**Name:** {item['clan_tag'][:256]} "
-                     f"{item['character_name'][:256]}\n"
-                     f"**Username**: {item['username'][:256]}\n"
-                     f"**KDR**: {item['kdr']}\n"
-                     f"**Kills**: {item['kills']}\n"
-                     f"**Deaths**: {item['deaths']}\n")
-        embed.add_field(name = f"{item['position']}:",
-                        value = user_info, inline = False)
+        user_info = (
+            f"**Name:** {item['clan_tag'][:256]} "
+            f"{item['character_name'][:256]}\n"
+            f"**Username**: {item['username'][:256]}\n"
+            f"**KDR**: {item['kdr']}\n"
+            f"**Kills**: {item['kills']}\n"
+            f"**Deaths**: {item['deaths']}\n"
+        )
+        embed.add_field(name=f"{item['position']}:", value=user_info, inline=False)
 
     return embed
 
+
 def about_embed():
-    '''Returns embed with info about bot's author, github url and other stuff'''
+    """Returns embed with info about bot's author, github url and other stuff"""
     log.debug("Preparing 'about' embed")
 
-    about = (f"**{configuration.BOT_NAME}** - discord bot for King Arthur's Gold, "
-    "written in python + discord.py. Its designed to be able to run on multiple "
-    "discord guilds at once, feature ability to setup some per-guild settings "
-    "via chat commands (and save them between bot's sessions in simple json file) "
-    "and be able to display all major information related to the game. \nThis bot "
-    "is completely free and opensource: if you want to run your own instance or "
-    "contribute to development - just visit bot's development page listed below")
+    about = (
+        f"**{configuration.BOT_NAME}** - discord bot for King Arthur's Gold, "
+        "written in python + discord.py. Its designed to be able to run on multiple "
+        "discord guilds at once, feature ability to setup some per-guild settings "
+        "via chat commands (and save them between bot's sessions in simple json file) "
+        "and be able to display all major information related to the game. \nThis bot "
+        "is completely free and opensource: if you want to run your own instance or "
+        "contribute to development - just visit bot's development page listed below"
+    )
 
-    how_to = (f"Just type **{configuration.BOT_PREFIX}help** in chat to get list "
-               "of all available commands")
+    how_to = (
+        f"Just type **{configuration.BOT_PREFIX}help** in chat to get list "
+        "of all available commands"
+    )
 
     url = "<https://github.com/moonburnt/notashark>"
 
     embed = Embed(timestamp=datetime.utcnow())
     embed.colour = 0x3498DB
     embed.title = "About Bot"
-    embed.add_field(name = "Overview:", value = about, inline = False)
-    embed.add_field(name = "How to Use:", value = how_to, inline = False)
-    embed.add_field(name = "Development Page:", value = url, inline = False)
+    embed.add_field(name="Overview:", value=about, inline=False)
+    embed.add_field(name="How to Use:", value=how_to, inline=False)
+    embed.add_field(name="Development Page:", value=url, inline=False)
 
     return embed

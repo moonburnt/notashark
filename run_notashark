@@ -28,49 +28,72 @@ BOT_NAME = notashark.configuration.BOT_NAME
 DEFAULT_SERVERLIST_UPDATE_TIME = notashark.configuration.SERVERLIST_UPDATE_TIME
 DEFAULT_SETTINGS_AUTOSAVE_TIME = notashark.configuration.SETTINGS_AUTOSAVE_TIME
 
-#log = logging.getLogger('notashark')
+# log = logging.getLogger('notashark')
 log = logging.getLogger()
-#looks like overriding logger's own level isnt the best idea, since it also make
-#logs below its level unaccessible to handlers, regardless of their settings.
-#Correct approach is to set logger itself to some sane level and then toggle
-#things on per-handler basis
-#log.setLevel(logging.WARNING)
+# looks like overriding logger's own level isnt the best idea, since it also make
+# logs below its level unaccessible to handlers, regardless of their settings.
+# Correct approach is to set logger itself to some sane level and then toggle
+# things on per-handler basis
+# log.setLevel(logging.WARNING)
 log.setLevel(logging.INFO)
 
-#Formatter for both handlers
+# Formatter for both handlers
 formatter = logging.Formatter(
-                    fmt = '[%(asctime)s][%(name)s][%(levelname)s] %(message)s',
-                    datefmt = '%d.%m.%y %H:%M:%S',
-                    )
+    fmt="[%(asctime)s][%(name)s][%(levelname)s] %(message)s",
+    datefmt="%d.%m.%y %H:%M:%S",
+)
 
-#this is a rotating handler that automatically ensures that log wont grow beyond
-#certain size and make backups of older logs. Really cool thing, may tweak it l8r
-file_handler = RotatingFileHandler(notashark.configuration.LOG_FILE, mode='a',
-                                   maxBytes=(10*1024*1024),
-                                   backupCount=2, encoding=None, delay=0)
-#file_handler = logging.FileHandler(LOG_FILE)
+# this is a rotating handler that automatically ensures that log wont grow beyond
+# certain size and make backups of older logs. Really cool thing, may tweak it l8r
+file_handler = RotatingFileHandler(
+    notashark.configuration.LOG_FILE,
+    mode="a",
+    maxBytes=(10 * 1024 * 1024),
+    backupCount=2,
+    encoding=None,
+    delay=0,
+)
+# file_handler = logging.FileHandler(LOG_FILE)
 file_handler.setFormatter(formatter)
-#file_handler.setLevel(logging.WARNING)
+# file_handler.setLevel(logging.WARNING)
 log.addHandler(file_handler)
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--token", help = ("Use this to supply your token to bot, "
-                                   "in case envars arent an option"))
-ap.add_argument("--debug", action = "store_true",
-                help = f"Add debug messages to {BOT_NAME}'s output")
-ap.add_argument("--serverlist-update-time",  type = int,
-    help = ("Custom lengh (in seconds) of pause between requests to api in order "
-            "to get fresh info about active servers with players on them. Also "
-            "used to autoupdate related embed. Could not be less than default "
-            f"value, which is {DEFAULT_SERVERLIST_UPDATE_TIME} seconds"))
-ap.add_argument("--settings-autosave-time", type = int,
-    help = ("Custom lengh (in seconds) of pause between autosaving per-server "
-            "settings on disk. Could not be less than default value, which is "
-            f"{DEFAULT_SETTINGS_AUTOSAVE_TIME} seconds"))
-ap.add_argument("--show-logs", action = "store_true",
-                help = ("Enable showcase of logs in terminal. Else these will be "
-                       f"only seen in {notashark.configuration.LOG_FILE} file"))
-#TODO: maybe add arg to override log file location/name?
+ap.add_argument(
+    "--token",
+    help=("Use this to supply your token to bot, " "in case envars arent an option"),
+)
+ap.add_argument(
+    "--debug", action="store_true", help=f"Add debug messages to {BOT_NAME}'s output"
+)
+ap.add_argument(
+    "--serverlist-update-time",
+    type=int,
+    help=(
+        "Custom lengh (in seconds) of pause between requests to api in order "
+        "to get fresh info about active servers with players on them. Also "
+        "used to autoupdate related embed. Could not be less than default "
+        f"value, which is {DEFAULT_SERVERLIST_UPDATE_TIME} seconds"
+    ),
+)
+ap.add_argument(
+    "--settings-autosave-time",
+    type=int,
+    help=(
+        "Custom lengh (in seconds) of pause between autosaving per-server "
+        "settings on disk. Could not be less than default value, which is "
+        f"{DEFAULT_SETTINGS_AUTOSAVE_TIME} seconds"
+    ),
+)
+ap.add_argument(
+    "--show-logs",
+    action="store_true",
+    help=(
+        "Enable showcase of logs in terminal. Else these will be "
+        f"only seen in {notashark.configuration.LOG_FILE} file"
+    ),
+)
+# TODO: maybe add arg to override log file location/name?
 
 args = ap.parse_args()
 
@@ -80,31 +103,41 @@ if args.debug:
 if args.show_logs:
     terminal_handler = logging.StreamHandler()
     terminal_handler.setFormatter(formatter)
-    #terminal_handler.setLevel(logging.ERROR)
+    # terminal_handler.setLevel(logging.ERROR)
     log.addHandler(terminal_handler)
 
-BOT_TOKEN = args.token or environ.get('NOTASHARK_DISCORD_KEY', None)
+BOT_TOKEN = args.token or environ.get("NOTASHARK_DISCORD_KEY", None)
 if not BOT_TOKEN:
-    log.critical("You didnt specify your discord bot's token! Please, either "
-                 "set NOTASHARK_DISCORD_KEY environment variable, or pass it "
-                 "via --token launch argument!\nAbort")
+    log.critical(
+        "You didnt specify your discord bot's token! Please, either "
+        "set NOTASHARK_DISCORD_KEY environment variable, or pass it "
+        "via --token launch argument!\nAbort"
+    )
     exit(1)
 
-if (args.serverlist_update_time and
-   (args.serverlist_update_time > DEFAULT_SERVERLIST_UPDATE_TIME)):
+if args.serverlist_update_time and (
+    args.serverlist_update_time > DEFAULT_SERVERLIST_UPDATE_TIME
+):
     notashark.configuration.SERVERLIST_UPDATE_TIME = args.serverlist_update_time
-log.info("Serverlist update time has been set to "
-        f"{notashark.configuration.SERVERLIST_UPDATE_TIME} seconds")
+log.info(
+    "Serverlist update time has been set to "
+    f"{notashark.configuration.SERVERLIST_UPDATE_TIME} seconds"
+)
 
-if (args.settings_autosave_time and
-   (args.settings_autosave_time > DEFAULT_SETTINGS_AUTOSAVE_TIME)):
+if args.settings_autosave_time and (
+    args.settings_autosave_time > DEFAULT_SETTINGS_AUTOSAVE_TIME
+):
     notashark.configuration.SETTINGS_AUTOSAVE_TIME = args.settings_autosave_time
-log.info("Settings autosave time has been set to "
-        f"{notashark.configuration.SETTINGS_AUTOSAVE_TIME} seconds")
+log.info(
+    "Settings autosave time has been set to "
+    f"{notashark.configuration.SETTINGS_AUTOSAVE_TIME} seconds"
+)
 
 log.debug(f"Launching data fetcher")
-#daemon=True allows to shutdown this thing in case of emergency right away
-dft = threading.Thread(target=notashark.data_fetcher._serverlist_autoupdater, daemon=True)
+# daemon=True allows to shutdown this thing in case of emergency right away
+dft = threading.Thread(
+    target=notashark.data_fetcher._serverlist_autoupdater, daemon=True
+)
 dft.start()
 
 log.debug(f"Launching settings autosaver")
@@ -115,6 +148,8 @@ log.debug(f"Launching {BOT_NAME}")
 try:
     notashark.discord_bot.bot.run(BOT_TOKEN)
 except discord.errors.LoginFailure:
-    log.critical("Invalid token error: double-check the value of "
-                 "NOTASHARK_DISCORD_KEY environment variable.\nAbort")
+    log.critical(
+        "Invalid token error: double-check the value of "
+        "NOTASHARK_DISCORD_KEY environment variable.\nAbort"
+    )
     exit(1)

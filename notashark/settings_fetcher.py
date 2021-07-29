@@ -26,51 +26,60 @@ log = logging.getLogger(__name__)
 SETTINGS_FILE = configuration.SETTINGS_FILE
 SETTINGS_AUTOSAVE_TIME = configuration.SETTINGS_AUTOSAVE_TIME
 
+
 def settings_loader():
-    '''Loads settings from SETTINGS_FILE, if available'''
-    with open(SETTINGS_FILE, 'r') as j:
+    """Loads settings from SETTINGS_FILE, if available"""
+    with open(SETTINGS_FILE, "r") as j:
         data = json.load(j)
     log.debug(f"Got following data: {data}")
     return data
 
+
 try:
     SETTINGS_DICTIONARY = settings_loader()
 except Exception as e:
-    log.error("An unfortunate exception has occured while "
-             f"trying to load {SETTINGS_FILE}: {e}")
+    log.error(
+        "An unfortunate exception has occured while "
+        f"trying to load {SETTINGS_FILE}: {e}"
+    )
     SETTINGS_DICTIONARY = {}
 
+
 def settings_saver():
-    '''Converts SETTINGS_DICTIONARY to json and saves to SETTINGS_FILE'''
+    """Converts SETTINGS_DICTIONARY to json and saves to SETTINGS_FILE"""
     jdata = json.dumps(SETTINGS_DICTIONARY)
-    with open(SETTINGS_FILE, 'w') as f:
+    with open(SETTINGS_FILE, "w") as f:
         f.write(jdata)
     log.debug(f"Successfully wrote data to {SETTINGS_FILE}")
 
+
 def settings_checker(guild_id):
-    '''Receive str(guild_id). If guild doesnt exist - add it to list'''
-    #I have no idea if this should be there at all, lol
+    """Receive str(guild_id). If guild doesnt exist - add it to list"""
+    # I have no idea if this should be there at all, lol
     guild_id = str(guild_id)
     global SETTINGS_DICTIONARY
     if not guild_id in SETTINGS_DICTIONARY:
         log.debug(f"Couldnt find {guild_id} in SETTINGS_DICTIONARY, adding")
         x = {}
-        x['serverlist_channel_id'] = None #id of serverlist channel
-        x['serverlist_message_id'] = None #id of message that should be edited
-        #idk if this needs more settings
+        x["serverlist_channel_id"] = None  # id of serverlist channel
+        x["serverlist_message_id"] = None  # id of message that should be edited
+        # idk if this needs more settings
         SETTINGS_DICTIONARY[guild_id] = x
-        #Im not sure if this may go into race condition situation
-        #if called for multiple servers at once. Hopefully not
+        # Im not sure if this may go into race condition situation
+        # if called for multiple servers at once. Hopefully not
         log.debug(f"Now settings list looks like: {SETTINGS_DICTIONARY}")
     else:
         log.debug(f"Found {guild_id} on SETTINGS_DICTIONARY, no need to add manually")
 
+
 def _settings_autosaver():
-    '''Autosaves settings to SETTINGS_FILE each SETTINGS_AUTOSAVE_TIME seconds.
-    Intended to be ran in separate thread on application's launch'''
+    """Autosaves settings to SETTINGS_FILE each SETTINGS_AUTOSAVE_TIME seconds.
+    Intended to be ran in separate thread on application's launch"""
     while True:
-        log.debug(f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds "
-                  f"to save settings to {SETTINGS_FILE}")
+        log.debug(
+            f"Waiting {SETTINGS_AUTOSAVE_TIME} seconds "
+            f"to save settings to {SETTINGS_FILE}"
+        )
         sleep(SETTINGS_AUTOSAVE_TIME)
         try:
             settings_saver()
