@@ -1,12 +1,12 @@
 #!/bin/bash
-### notashark launcher script
+### example notashark launch script
 
 ## Vars
 # Change value of this to be your bot's token in quotes:
 NOTASHARK_DISCORD_KEY=""
 
 # Dont touch anything below, unless you know what you are doing
-botname="run_notashark"
+botname="notashark"
 botpath="."
 scriptname=$(basename "$0")
 
@@ -17,4 +17,4 @@ fi
 export NOTASHARK_DISCORD_KEY
 
 chmod +x "$botpath/$botname"
-exec "$botpath/$botname"
+exec python "$botpath/$botname" --show-logs

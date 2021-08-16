@@ -14,14 +14,11 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
-# This module contains default configuration variables, to use from other modules
+from .parts import *
+from .discord_bot import *
+from .settings import *
+from .fetcher import *
+from .embeds import *
+import logging
 
-from os.path import join
-
-BOT_NAME = "notashark"
-BOT_PREFIX = "!"
-SERVERLIST_UPDATE_TIME = 30
-# updating settings file each 5 minutes
-SETTINGS_AUTOSAVE_TIME = 300
-SETTINGS_FILE = join(".", "settings.json")
-LOG_FILE = f"{BOT_NAME}.log"
+logging.getLogger(__name__).addHandler(logging.NullHandler())

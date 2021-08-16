@@ -14,7 +14,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
-from .src import *
-import logging
+if __name__ == "__main__":
+    import cli
 
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+    cli.main()

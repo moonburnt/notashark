@@ -12,12 +12,12 @@ to the game, including:
 - Kagstats profile info
 - Kagstats leaderboards
 
-You can see some usage screenshots in [screenshots](/screenshots).
+You can see some usage screenshots in [screenshots](https://github.com/moonburnt/notashark/tree/master/screenshots).
 
 ## Development Status:
 
 This bot is considered to be feature-complete. There may be some small fixes and
-improvements, but for the most - bot is already done and ready for daily usage
+improvements, but for the most - bot is already done and ready for daily usage.
 
 ## Dependencies:
 
@@ -34,20 +34,25 @@ improvements, but for the most - bot is already done and ready for daily usage
 
 ## Usage:
 
+Bot's development repository contain
+[example launcher script](https://github.com/moonburnt/notashark/blob/master/launcher.sh),
+which, once configured, can be used as sort of "autorun template" to drop into
+cronjob and forget about. Below are examples of how to run bot without it.
+
 ### Basic:
 
-- Open launcher.sh in your text editor of choice
-- Edit 'NOTASHARK_DISCORD_KEY' variable to match your bot's discord token
-- Run `./launcher.sh`
+- Run `python ./notashark --show-logs --token=YOUR_TOKEN` (where YOUR_TOKEN is
+your discord bot's token)
 This will run bot in its default configuration, suitable for most needs.
 
-### Advanced:
-- `./run_notashark -h` to get full list of available launch flags
-- Manually setup 'NOTASHARK_DISCORD_KEY' environment variable to match your bot's
-discord token
-- ALTERNATIVELY: pass your discord bot's token as `--token` launch argument
-- `./run_notashark` with whatever flags you want
+### Recommended:
+
+- Set 'NOTASHARK_DISCORD_KEY' environment variable to your bot's discord token
+- `python ./notashark -h` to get list of all available launch flags
+- Run `python ./notashark` with whatever flags you like (there is no need to pass
+token as launch argument again - it will be fetched from envars).
+This is a bit more secure thus recommended way to use this bot.
 
 ## LICENSE:
 
-[GPLv3](LICENSE)
+[GPLv3](https://github.com/moonburnt/notashark/blob/master/LICENSE)
