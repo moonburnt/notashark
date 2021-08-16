@@ -28,92 +28,95 @@ from types import SimpleNamespace
 log = logging.getLogger(__name__)
 
 
-def make_bot(
-    settings_manager: settings.SettingsManager = None,
-    api_fetcher: fetcher.ApiFetcher = None,
-    command_prefix: str = "!",
-    bot_name: str = "notashark",
-):
-    """Factory to create bot's instance with provided settings"""
-    bot = commands.Bot(command_prefix=command_prefix)
-    converter = commands.TextChannelConverter()
+class Notashark(commands.Bot):
+    """Discord bot for King Arthur's Gold"""
 
-    # this is kinda bad in terms of being future-proof, but thats the recommended
-    # way to store custom vars rn #TODO
-    bot.config = SimpleNamespace()
-    bot.config.settings_manager = settings_manager or settings.SettingsManager()
-    bot.config.api_fetcher = api_fetcher or fetcher.ApiFetcher()
-    bot.config.name = bot_name
-    bot.config.command_prefix = command_prefix
+    def __init__(
+        self,
+        settings_manager: settings.SettingsManager = None,
+        api_fetcher: fetcher.ApiFetcher = None,
+        command_prefix: str = "!",
+        name: str = "notashark",
+    ):
+        self.settings_manager = settings_manager or settings.SettingsManager()
+        self.api_fetcher = api_fetcher or fetcher.ApiFetcher()
+        self.name = name
+        super().__init__(
+            command_prefix=command_prefix,
+        )
 
-    # removing default help, coz its easier to make a new, than to fix a template
-    bot.remove_command("help")
-
-    def run(token: str):
+    def run(self, token, **kwargs):
         """Run bot and related routines"""
         try:
             log.debug("Launching data fetcher")
             # daemon=True allows to shutdown this thing in case of emergency right away
             dft = threading.Thread(
-                target=bot.config.api_fetcher.autoupdate_routine, daemon=True
+                target=self.api_fetcher.autoupdate_routine, daemon=True
             )
             dft.start()
 
             log.debug("Initializing settings manager")
             sat = threading.Thread(
-                target=bot.config.settings_manager.autosave_routine,
+                target=self.settings_manager.autosave_routine,
             )
             sat.start()
 
-            log.debug("Launching notashark")
-            bot.run(token)
+            log.debug(f"Launching {self.name}")
+            super().run(token, **kwargs)
         except discord.errors.LoginFailure:
-            log.critical(
-                "Invalid token error. Please check if token you've passed to bot "
-                "is correct, then try again"
-            )
+            log.critical("Invalid bot token! Please double-check and try again")
             exit(1)
         except Exception as e:
-            log.critical(
-                f"Some critical error has occured during bot initialization: {e}"
-            )
+            log.critical(f"Unable to initialize {self.name}: {e}")
             exit(1)
 
-        # This will wait for bot to actually connect - see before_updating()
-        # log.debug("Launching stats autoupdater")
-        # update_everything.start()
 
-    bot.config.run = run
+def make_bot(
+    settings_manager: settings.SettingsManager = None,
+    api_fetcher: fetcher.ApiFetcher = None,
+    command_prefix: str = "!",
+    name: str = "notashark",
+):
+    """Factory to create bot's instance with provided settings"""
+    bot = Notashark(
+        settings_manager=settings_manager,
+        api_fetcher=api_fetcher,
+        command_prefix=command_prefix,
+        name=name,
+    )
+
+    # removing default help, coz its easier to make a new, than to fix a template
+    bot.remove_command("help")
+
+    converter = commands.TextChannelConverter()
 
     async def update_status():
-        """Update bot's status with current bot.config.api_fetcher.kag_servers data"""
-        data = bot.config.api_fetcher.kag_servers
+        """Update bot's status with current bot.api_fetcher.kag_servers data"""
+        data = bot.api_fetcher.kag_servers
         if data and (data.players_amount > 0):
-            message = f"with {data.players_amount} peasants | {command_prefix}help"
+            message = f"with {data.players_amount} peasants | {bot.command_prefix}help"
         else:
-            message = f"alone | {command_prefix}help"
+            message = f"alone | {bot.command_prefix}help"
 
         await bot.change_presence(activity=discord.Game(name=message))
 
     async def update_serverlists():
         """Update serverlists on all servers that have this feature enabled"""
-        for item in bot.config.settings_manager.storage:
+        for item in bot.settings_manager.storage:
             # avoiding entries without serverlist_channel_id being set
             if (
-                not bot.config.settings_manager.storage[item]
-                or not bot.config.settings_manager.storage[item][
-                    "serverlist_channel_id"
-                ]
+                not bot.settings_manager.storage[item]
+                or not bot.settings_manager.storage[item]["serverlist_channel_id"]
             ):
                 continue
 
             try:
                 # future reminder: serverlist_channel_id should always be int
                 channel = bot.get_channel(
-                    bot.config.settings_manager.storage[item]["serverlist_channel_id"]
+                    bot.settings_manager.storage[item]["serverlist_channel_id"]
                 )
                 message = await channel.fetch_message(
-                    bot.config.settings_manager.storage[item]["serverlist_message_id"]
+                    bot.settings_manager.storage[item]["serverlist_message_id"]
                 )
             except AttributeError:
                 log.warning(
@@ -124,30 +127,28 @@ def make_bot(
             except (discord.errors.NotFound, discord.errors.HTTPException):
                 log.debug("Unable to find existing message, configuring new one")
                 channel = bot.get_channel(
-                    bot.config.settings_manager.storage[item]["serverlist_channel_id"]
+                    bot.settings_manager.storage[item]["serverlist_channel_id"]
                 )
                 message = await channel.send("Gathering the data...")
                 log.debug("Sent placeholder serverlist msg to {item}/{channel.id}")
-                bot.config.settings_manager.storage[item][
-                    "serverlist_message_id"
-                ] = message.id
+                bot.settings_manager.storage[item]["serverlist_message_id"] = message.id
             except Exception as e:
                 # this SHOULD NOT happen, kept there as "last resort"
                 log.error(f"Got exception while trying to edit serverlist message: {e}")
                 continue
 
-            infobox = embeds.make_servers_embed(bot.config.api_fetcher.get_servers())
+            infobox = embeds.make_servers_embed(bot.api_fetcher.get_servers())
             await message.edit(content=None, embed=infobox)
             log.info(f"Successfully updated serverlist on {channel.id}/{message.id}")
 
     @bot.event
     async def on_ready():
-        log.info(f"Running {bot.config.name} as {bot.user}!")
+        log.info(f"Running {bot.name} as {bot.user}!")
         log.debug("Launching stats autoupdater")
         update_everything.start()
 
     # amount of time is pause between tasks, NOT time before task dies
-    @tasks.loop(seconds=bot.config.api_fetcher.autoupdate_time)
+    @tasks.loop(seconds=bot.api_fetcher.autoupdate_time)
     async def update_everything():
         log.debug("Updating serverlists")
         await update_serverlists()
@@ -163,7 +164,7 @@ def make_bot(
     async def on_guild_available(ctx):
         log.info(f"Connected to guild {ctx.id}")
         log.debug(f"Ensuring bot knows about guild {ctx.id}")
-        bot.config.settings_manager.add_entry(
+        bot.settings_manager.add_entry(
             guild_id=str(ctx.id),
         )
 
@@ -187,7 +188,7 @@ def make_bot(
     @server_group.command(name="list")
     async def get_servers(ctx):
         try:
-            infobox = embeds.make_servers_embed(bot.config.api_fetcher.get_servers())
+            infobox = embeds.make_servers_embed(bot.api_fetcher.get_servers())
         except Exception as e:
             await ctx.channel.send("Something went wrong...")
             log.error(
@@ -209,14 +210,14 @@ def make_bot(
         except:
             await ctx.channel.send(
                 "This command requires server IP and port to work."
-                f"For example: `{configuration.BOT_PREFIX}"
+                f"For example: `{bot.command_prefix}"
                 "server info 8.8.8.8:80`"
             )
             log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
             return
 
         try:
-            data = embeds.make_server_embed(bot.config.api_fetcher.get_server(ip, port))
+            data = embeds.make_server_embed(bot.api_fetcher.get_server(ip, port))
         except Exception as e:
             await ctx.channel.send(
                 "Couldnt find such server. Are you sure the address is correct?"
@@ -250,11 +251,11 @@ def make_bot(
                 log.debug(f"Attempting to get ID of channel {clink}")
                 cid = await converter.convert(ctx, clink)
                 # its necessary to specify ctx.guild.id as str, coz json cant into ints in keys
-                bot.config.settings_manager.storage[str(ctx.guild.id)][
+                bot.settings_manager.storage[str(ctx.guild.id)][
                     "serverlist_channel_id"
                 ] = cid.id
                 # resetting message id, in case this channel has already been set for that purpose in past
-                bot.config.settings_manager.storage[str(ctx.guild.id)][
+                bot.settings_manager.storage[str(ctx.guild.id)][
                     "serverlist_message_id"
                 ] = None
             except Exception as e:
@@ -282,16 +283,14 @@ def make_bot(
         if not args:
             await ctx.channel.send(
                 "This command requires player name or id to be supplied. "
-                f"For example: `{command_prefix}kagstats bunnie`"
+                f"For example: `{bot.command_prefix}kagstats bunnie`"
             )
             log.info(f"{ctx.author} has asked for player info, but misspelled prefix")
             return
 
         player = args[0]
         try:
-            infobox = embeds.make_kagstats_embed(
-                bot.config.api_fetcher.get_kagstats(player)
-            )
+            infobox = embeds.make_kagstats_embed(bot.api_fetcher.get_kagstats(player))
         except Exception as e:
             await ctx.channel.send(
                 f"Couldnt find such player. Are you sure this player "
@@ -313,7 +312,7 @@ def make_bot(
         if not args:
             await ctx.channel.send(
                 "This command requires leaderboard type. "
-                f"For example: `{command_prefix}leaderboard kdr`\n"
+                f"For example: `{bot.command_prefix}leaderboard kdr`\n"
                 "Available parts are the following:\n"
                 " - kdr\n - kills\n - monthly archer\n"
                 " - monthly builder\n - monthly knight\n"
@@ -333,7 +332,7 @@ def make_bot(
 
         try:
             infobox = embeds.make_leaderboard_embed(
-                bot.config.api_fetcher.get_leaderboard(prefix)
+                bot.api_fetcher.get_leaderboard(prefix)
             )
         except UnboundLocalError:
             await ctx.channel.send(
@@ -358,23 +357,23 @@ def make_bot(
     async def get_help(ctx):
         # I thought about remaking it into embed, but it looks ugly this way
         await ctx.channel.send(
-            f"Hello, Im {bot.config.name} bot and Im there to assist you with all "
+            f"Hello, Im {bot.name} bot and Im there to assist you with all "
             "King Arthur's Gold needs!\n\n"
             "Currently there are following custom commands available:\n"
-            f"`{command_prefix}server list` - will display list of active servers "
+            f"`{bot.command_prefix}server list` - will display list of active servers "
             "with their base info, aswell as their total population numbers\n"
-            f"`{command_prefix}server info *IP:port*` - will display detailed "
+            f"`{bot.command_prefix}server info *IP:port*` - will display detailed "
             "info of selected server, including description and in-game minimap\n"
-            f"`{command_prefix}kagstats *player*` - will display gameplay "
+            f"`{bot.command_prefix}kagstats *player*` - will display gameplay "
             "statistics of player with provided kagstats id or username\n"
-            f"`{command_prefix}leaderboard *type*` - will display top-3 players "
+            f"`{bot.command_prefix}leaderboard *type*` - will display top-3 players "
             "in this category of kagstats leaderboard. To get list of available parts - "
-            f"just type `{command_prefix}leaderboard`, without specifying anything\n"
-            f"`{command_prefix}set autoupdate channel #channel_id` - will set "
-            f"passed channel to auto-fetch serverlist each {bot.config.api_fetcher.autoupdate_time} "
+            f"just type `{bot.command_prefix}leaderboard`, without specifying anything\n"
+            f"`{bot.command_prefix}set autoupdate channel #channel_id` - will set "
+            f"passed channel to auto-fetch serverlist each {bot.api_fetcher.autoupdate_time} "
             "seconds. Keep in mind that you must be guild's admin to use it!\n"
-            f"`{command_prefix}help` - shows this message\n"
-            f"`{command_prefix}about` - shows general bot's info"
+            f"`{bot.command_prefix}help` - shows this message\n"
+            f"`{bot.command_prefix}about` - shows general bot's info"
         )
         log.info(
             f"{ctx.author.id} has asked for help on {ctx.guild.id}/{ctx.channel.id}. Responded"

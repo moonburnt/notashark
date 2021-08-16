@@ -134,7 +134,7 @@ def main():
         settings_manager=settings_manager,
         api_fetcher=api_fetcher,
     )
-    bot.config.run(BOT_TOKEN)
+    bot.run(BOT_TOKEN)
 
 
 if __name__ == "__main__":
