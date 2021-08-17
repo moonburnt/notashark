@@ -35,14 +35,14 @@ LEADERBOARD_URL = "https://kagstats.com/#/leaderboards"
 LEADERBOARD_SCOPES = {
     "kdr": {
         "get_leaderboard": kagstats.leaderboard.global_kdr,
-        "description": "Total KDR",
+        "description": "All Time KDR",
         "url": "Hidden",
         "kills_slug": "totalKills",
         "deaths_slug": "totalDeaths",
     },
     "kills": {
         "get_leaderboard": kagstats.leaderboard.global_kills,
-        "description": "Total Kills",
+        "description": "All Time Kills",
         "url": "Hidden",
         "kills_slug": "totalKills",
         "deaths_slug": "totalDeaths",

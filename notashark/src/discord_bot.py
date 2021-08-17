@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 
 class Notashark(commands.Bot):
-    """Discord bot for King Arthur's Gold"""
+    """Discord bot for King Arthur's Gold."""
 
     def __init__(
         self,
@@ -46,12 +46,13 @@ class Notashark(commands.Bot):
         )
 
     def run(self, token, **kwargs):
-        """Run bot and related routines"""
+        """Run bot and related routines."""
         try:
             log.debug("Launching data fetcher")
-            # daemon=True allows to shutdown this thing in case of emergency right away
+            # daemon=True allows to shutdown this thing without w8ing for completion
             dft = threading.Thread(
-                target=self.api_fetcher.autoupdate_routine, daemon=True
+                target=self.api_fetcher.autoupdate_routine,
+                daemon=True,
             )
             dft.start()
 
@@ -70,6 +71,28 @@ class Notashark(commands.Bot):
             log.critical(f"Unable to initialize {self.name}: {e}")
             exit(1)
 
+    async def on_command_error(self, ctx, error):
+        """Process command's error"""
+
+        # Ignoring commands with custom error handlers and invalid commands
+        if hasattr(ctx.command, "on_error") or isinstance(
+            error, commands.CommandNotFound
+        ):
+            return
+
+        # Getting original error message from discordpy's wrapper, where available
+        error = getattr(error, "original", error)
+        log.error(
+            f"Command '{self.command_prefix}{ctx.command}' by {ctx.author.id} "
+            f"on {ctx.guild.id}/{ctx.channel.id} has raised an exception: "
+            f"{type(error).__name__}: {error}"
+        )
+        await ctx.channel.send(
+            "Something went wrong... "
+            f"Are you sure you are using '{ctx.command}' correctly?"
+        )
+        # #TODO: handle specific error types differently
+
 
 def make_bot(
     settings_manager: settings.SettingsManager = None,
@@ -77,7 +100,7 @@ def make_bot(
     command_prefix: str = "!",
     name: str = "notashark",
 ):
-    """Factory to create bot's instance with provided settings"""
+    """Factory to create bot's instance with provided settings."""
     bot = Notashark(
         settings_manager=settings_manager,
         api_fetcher=api_fetcher,
@@ -91,7 +114,7 @@ def make_bot(
     converter = commands.TextChannelConverter()
 
     async def update_status():
-        """Update bot's status with current bot.api_fetcher.kag_servers data"""
+        """Update bot's status with current bot.api_fetcher.kag_servers data."""
         data = bot.api_fetcher.kag_servers
         if data and (data.players_amount > 0):
             message = f"with {data.players_amount} peasants | {bot.command_prefix}help"
@@ -101,7 +124,7 @@ def make_bot(
         await bot.change_presence(activity=discord.Game(name=message))
 
     async def update_serverlists():
-        """Update serverlists on all servers that have this feature enabled"""
+        """Update serverlists on all servers that have this feature enabled."""
         for item in bot.settings_manager.storage:
             # avoiding entries without serverlist_channel_id being set
             if (
@@ -120,7 +143,8 @@ def make_bot(
                 )
             except AttributeError:
                 log.warning(
-                    f"Unable to update serverlist on channel {channel_id}:"
+                    "Unable to update serverlist on channel "
+                    f"{bot.settings_manager.storage[item]['serverlist_channel_id']}:"
                     f"guild {item} is unavailable"
                 )
                 continue
@@ -130,7 +154,7 @@ def make_bot(
                     bot.settings_manager.storage[item]["serverlist_channel_id"]
                 )
                 message = await channel.send("Gathering the data...")
-                log.debug("Sent placeholder serverlist msg to {item}/{channel.id}")
+                log.debug(f"Sent placeholder serverlist msg to {item}/{channel.id}")
                 bot.settings_manager.storage[item]["serverlist_message_id"] = message.id
             except Exception as e:
                 # this SHOULD NOT happen, kept there as "last resort"
@@ -143,32 +167,37 @@ def make_bot(
 
     @bot.event
     async def on_ready():
+        """Inform about bot going online and start autoupdating routine."""
+
         log.info(f"Running {bot.name} as {bot.user}!")
         log.debug("Launching stats autoupdater")
         update_everything.start()
 
-    # amount of time is pause between tasks, NOT time before task dies
     @tasks.loop(seconds=bot.api_fetcher.autoupdate_time)
     async def update_everything():
+        """Update serverlists and bot's status.
+        Runs each bot.api_fetcher.autoupdate_time seconds in loop.
+        """
         log.debug("Updating serverlists")
         await update_serverlists()
         log.debug("Updating bot's status")
         await update_status()
 
-    # ensuring that updater only runs if bot is ready
     @update_everything.before_loop
     async def before_updating():
+        """Routine that ensure update_everything() only runs once bot is ready."""
         await bot.wait_until_ready()
 
     @bot.event
     async def on_guild_available(ctx):
+        """Event that triggers each time bot connects to some guild."""
         log.info(f"Connected to guild {ctx.id}")
         log.debug(f"Ensuring bot knows about guild {ctx.id}")
         bot.settings_manager.add_entry(
             guild_id=str(ctx.id),
         )
 
-    # this is an easier way to do "server" prefix without massive 'if/else's afterwards
+    # this is a recommended way to handle multi-part commands separated by space
     @bot.group(
         name="server",
         # This makes it possible to use this command without additional args
@@ -182,181 +211,140 @@ def make_bot(
             "servers\n`info *ip:port*` - to get detailed information "
             "of some specific server (including minimap)"
         )
-        log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
+        log.info(f"{ctx.author} has asked for server info, but misspelled format")
         return
 
     @server_group.command(name="list")
     async def get_servers(ctx):
-        try:
-            infobox = embeds.make_servers_embed(bot.api_fetcher.get_servers())
-        except Exception as e:
-            await ctx.channel.send("Something went wrong...")
-            log.error(
-                f"An exception has occured while trying to send servers embed: {e}"
-            )
-        else:
-            await ctx.channel.send(
-                content=None,
-                embed=infobox,
-            )
-            log.info(f"{ctx.author} has asked for servers embed. Responded")
+        """Get base info about currently populated servers."""
+
+        infobox = embeds.make_servers_embed(bot.api_fetcher.get_servers())
+        await ctx.channel.send(
+            content=None,
+            embed=infobox,
+        )
+        log.info(f"{ctx.author} has asked for servers embed. Responded")
 
     @server_group.command(name="info")
     async def get_server(ctx, *args):
-        try:
-            server_address = args[0]
-            # avoiding breakage on interactive uri
-            if server_address.startswith("<") and server_address.endswith(">"):
-                server_address = server_address[1 : (len(server_address) - 1)]
-            # support for kag:// uri
-            if server_address.startswith("kag://"):
-                server_address = server_address[6:]
-            ip, port = server_address.split(":")
-        except:
+        """Get detailed info about specific kag server."""
+
+        # #TODO: replace this with error handler. Probably
+        if not args:
             await ctx.channel.send(
-                "This command requires server IP and port to work."
-                f"For example: `{bot.command_prefix}"
-                "server info 8.8.8.8:80`"
+                "This command requires server address or ip:port. For example: "
+                f"`{bot.command_prefix}server info kag://138.201.55.232:10592`"
             )
-            log.info(f"{ctx.author} has asked for server info, but misspelled prefix")
+            log.info(f"{ctx.author} has asked for server info, but misspelled format")
             return
 
-        try:
-            data = embeds.make_server_embed(bot.api_fetcher.get_server(ip, port))
-        except Exception as e:
-            await ctx.channel.send(
-                "Couldnt find such server. Are you sure the address is correct?"
-            )
-            log.info(
-                f"Got exception while trying to answer {ctx.author} "
-                f"with info of {server_address}: {e}"
-            )
-        else:
-            await ctx.channel.send(
-                content=None,
-                file=data.attachment,
-                embed=data.embed,
-            )
-            log.info(f"Responded {ctx.author} with server info of {server_address}.")
+        server_address = args[0]
+        # avoiding breakage on interactive uri
+        if server_address.startswith("<") and server_address.endswith(">"):
+            server_address = server_address[1 : (len(server_address) - 1)]
+        # support for kag:// uri
+        if server_address.startswith("kag://"):
+            server_address = server_address[6:]
+
+        data = embeds.make_server_embed(
+            bot.api_fetcher.get_server(*server_address.split(":"))
+        )
+        await ctx.channel.send(
+            content=None,
+            file=data.attachment,
+            embed=data.embed,
+        )
+        log.info(f"Responded {ctx.author} with server info of {server_address}.")
 
     @bot.command(name="set")
     async def configure(ctx, *args):
-        # this doesnt need to be multiline, coz next arg is checked only if first match
-        # thus there should be no exception if args is less than necessary
-        if (
-            len(args) >= 3
-            and (args[0] == "autoupdate")
-            and (args[1] == "channel")
-            and
+        """Configure bot's autoupdate channel for current server.
+        You must have admin rights to use this functionality.
+        """
+        # ignoring invalid setters. I could rework this to group, but there are
+        # no other configuration commands, thus there is no point rn #TODO
+        if len(args) >= 3 and (args[0] == "autoupdate") and (args[1] == "channel"):
             # ensuring that message's author is admin
-            ctx.message.author.guild_permissions.administrator
-        ):
-            try:
-                clink = args[2]
-                log.debug(f"Attempting to get ID of channel {clink}")
-                cid = await converter.convert(ctx, clink)
-                # ctx.guild.id must be str, coz json cant into ints in keys
-                bot.settings_manager.storage[str(ctx.guild.id)][
-                    "serverlist_channel_id"
-                ] = cid.id
-                # resetting message id, in case its already been set in past
-                bot.settings_manager.storage[str(ctx.guild.id)][
-                    "serverlist_message_id"
-                ] = None
-            except Exception as e:
-                log.error(f"Got exception while trying to set autoupdate channel: {e}")
+            if not ctx.message.author.guild_permissions.administrator:
                 await ctx.channel.send(
-                    "Something went wrong... "
-                    "Please double-check syntax and try again"
+                    "You must have admin rights on this guild to do that"
                 )
-            else:
-                await ctx.channel.send(
-                    f"Successfully set {cid} as channel for autoupdates"
-                )
-                log.info(
-                    f"{ctx.author.id} tried to set {cid} as channel for "
-                    f"autoupdates on {ctx.guild.id}/{ctx.channel.id}. Granted"
-                )
-        else:
-            await ctx.channel.send(
-                "Unable to process your request: please double-check "
-                "syntax and your permissions on this guild"
+
+            # Attempting to get ID of channel
+            cid = await converter.convert(ctx, args[2])
+            # ctx.guild.id must be str, coz json cant into ints in keys
+            bot.settings_manager.storage[str(ctx.guild.id)][
+                "serverlist_channel_id"
+            ] = cid.id
+            # resetting message id, in case its already been set in past
+            bot.settings_manager.storage[str(ctx.guild.id)][
+                "serverlist_message_id"
+            ] = None
+            await ctx.channel.send(f"Successfully set {cid} as channel for autoupdates")
+            log.info(
+                f"{ctx.author.id} tried to set {cid} as channel for "
+                f"autoupdates on {ctx.guild.id}/{ctx.channel.id}. Granted"
             )
 
     @bot.command(name="kagstats")
     async def get_kagstats(ctx, *args):
+        """Get player's kagstats profile info"""
         if not args:
             await ctx.channel.send(
-                "This command requires player name or id to be supplied. "
+                "This command requires player name or kagstats id. "
                 f"For example: `{bot.command_prefix}kagstats bunnie`"
             )
-            log.info(f"{ctx.author} has asked for player info, but misspelled prefix")
+            # #TODO: maybe make this follow error logging format?
+            log.info(f"{ctx.author} has asked for player info, but misspelled format")
             return
 
         player = args[0]
-        try:
-            infobox = embeds.make_kagstats_embed(bot.api_fetcher.get_kagstats(player))
-        except Exception as e:
-            await ctx.channel.send(
-                f"Couldnt find such player. Are you sure this player "
-                "exists and you didnt misspell their name or kagstats id?"
-            )
-            log.info(
-                f"Got exception while trying to answer {ctx.author} with info of player {player}: {e}"
-            )
-        else:
-            await ctx.channel.send(content=None, embed=infobox)
-            log.info(
-                f"{ctx.author} has asked for player info of {player} on "
-                f"{ctx.guild.id}/{ctx.channel.id}. Responded"
-            )
+        infobox = embeds.make_kagstats_embed(bot.api_fetcher.get_kagstats(player))
+        await ctx.channel.send(content=None, embed=infobox)
+        log.info(
+            f"{ctx.author} has asked for player info of {player} on "
+            f"{ctx.guild.id}/{ctx.channel.id}. Responded"
+        )
 
-    # #TODO: remake this to command group
-    @bot.command(name="leaderboard")
-    async def get_leaderboard(ctx, *args):
-        if not args:
-            await ctx.channel.send(
-                "This command requires leaderboard type. "
-                f"For example: `{bot.command_prefix}leaderboard kdr`\n"
-                "Available parts are the following:\n"
-                " - kdr\n - kills\n - monthly archer\n"
-                " - monthly builder\n - monthly knight\n"
-                " - global archer\n - global builder\n - global knight"
-            )
-            log.info(f"{ctx.author} has asked for leaderboard, but didnt specify type")
-            return
+    @bot.group(
+        name="leaderboard",
+        invoke_without_command=True,
+    )
+    async def leaderboard_group(ctx, *args):
+        await ctx.channel.send(
+            "This command requires leaderboard type. "
+            f"For example: `{bot.command_prefix}leaderboard global kdr`\n"
+            "Available types are the following:\n"
+            " - global kdr\n - global kills\n - global archer\n"
+            " - global builder\n - global knight\n - monthly archer\n"
+            " - monthly builder\n - monthly knight\n"
+        )
+        log.info(f"{ctx.author} has asked for leaderboard, but didnt specify type")
+
+    async def get_leaderboard(ctx, scope: str):
+        """Get leaderboard of specified scope"""
+        infobox = embeds.make_leaderboard_embed(bot.api_fetcher.get_leaderboard(scope))
+        await ctx.channel.send(content=None, embed=infobox)
+        log.info(
+            f"{ctx.author} has asked for {scope} leaderboard on "
+            f"{ctx.guild.id}/{ctx.channel.id}. Responded"
+        )
+
+    @leaderboard_group.command(name="global")
+    async def get_global_leaderboard(ctx, *args):
+        """Get top-3 players from global leaderboard of specified type"""
 
         if args[0] in ("kills", "kdr"):
             prefix = args[0]
-        elif (
-            len(args) >= 2
-            and args[0] in ("global", "monthly")
-            and args[1] in ("archer", "builder", "knight")
-        ):
-            prefix = "_".join(args[0:2])
-
-        try:
-            infobox = embeds.make_leaderboard_embed(
-                bot.api_fetcher.get_leaderboard(prefix)
-            )
-        except UnboundLocalError:
-            await ctx.channel.send(
-                "Couldnt find such leaderboard. "
-                "Please, double-check the prefix and try again"
-            )
-            log.info(f"{ctx.author} has asked for leaderboard, but misspelled prefix")
-        except Exception as e:
-            await ctx.channel.send(
-                "Unable to fetch leaderboard right now. " "Please, try again later"
-            )
-            log.info(
-                f"Got exception while trying to answer {ctx.author} with leaderboard: {e}"
-            )
         else:
-            await ctx.channel.send(content=None, embed=infobox)
-            log.info(
-                f"{ctx.author} has asked for leaderboard on {ctx.guild.id}/{ctx.channel.id}. Responded"
-            )
+            prefix = f"global_{args[0]}"
+
+        await get_leaderboard(ctx, prefix)
+
+    @leaderboard_group.command(name="monthly")
+    async def get_monthly_leaderboard(ctx, *args):
+        """Get top-3 players from monthly leaderboard of specified type"""
+        await get_leaderboard(ctx, f"monthly_{args[0]}")
 
     @bot.command(name="help")
     async def get_help(ctx):
