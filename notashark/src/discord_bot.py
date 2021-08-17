@@ -203,9 +203,14 @@ def make_bot(
 
     @server_group.command(name="info")
     async def get_server(ctx, *args):
-        # #TODO: add ability to accept kag:// uri
         try:
             server_address = args[0]
+            # avoiding breakage on interactive uri
+            if server_address.startswith("<") and server_address.endswith(">"):
+                server_address = server_address[1 : (len(server_address) - 1)]
+            # support for kag:// uri
+            if server_address.startswith("kag://"):
+                server_address = server_address[6:]
             ip, port = server_address.split(":")
         except:
             await ctx.channel.send(
@@ -250,11 +255,11 @@ def make_bot(
                 clink = args[2]
                 log.debug(f"Attempting to get ID of channel {clink}")
                 cid = await converter.convert(ctx, clink)
-                # its necessary to specify ctx.guild.id as str, coz json cant into ints in keys
+                # ctx.guild.id must be str, coz json cant into ints in keys
                 bot.settings_manager.storage[str(ctx.guild.id)][
                     "serverlist_channel_id"
                 ] = cid.id
-                # resetting message id, in case this channel has already been set for that purpose in past
+                # resetting message id, in case its already been set in past
                 bot.settings_manager.storage[str(ctx.guild.id)][
                     "serverlist_message_id"
                 ] = None
