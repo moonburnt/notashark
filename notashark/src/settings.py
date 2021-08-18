@@ -34,6 +34,7 @@ class SettingsManager:
         self.settings_file = settings_file or DEFAULT_SETTINGS_FILE
         self.autosave_time = autosave_time or DEFAULT_AUTOSAVE_TIME
         self.storage = {}
+        self.load_settings()
 
     def get_settings(self, filepath: str = None) -> dict:
         """Get settings from provided file"""
@@ -46,7 +47,7 @@ class SettingsManager:
     def load_settings(self, filepath: str = None):
         """Load settings into self.storage"""
         try:
-            settings = get_settings(filepath)
+            settings = self.get_settings(filepath)
         except Exception as e:
             log.error(f"Unable to load settings from {filepath}: {e}")
         else:

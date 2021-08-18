@@ -85,7 +85,10 @@ def main():
         help="Enable showcase of logs in terminal",
     )
     # TODO: maybe add arg to override log file location/name?
-
+    ap.add_argument(
+        "--settings-file",
+        help="Custom path to settings file",
+    )
     args = ap.parse_args()
 
     if args.debug:
@@ -97,36 +100,37 @@ def main():
         # terminal_handler.setLevel(logging.ERROR)
         log.addHandler(terminal_handler)
 
-    BOT_TOKEN = args.token or environ.get("NOTASHARK_DISCORD_KEY", None)
-    if not BOT_TOKEN:
+    bot_token = args.token or environ.get("NOTASHARK_DISCORD_KEY", None)
+    if not bot_token:
         log.critical(
             "You didnt specify bot's token! Either set NOTASHARK_DISCORD_KEY "
             "environment variable, or pass it via --token launch argument!\nAbort"
         )
         exit(1)
 
-    SERVERS_AUTOUPDATE_TIME = (
+    servers_autoupdate_time = (
         args.serverlist_update_time
         if args.serverlist_update_time
         and args.serverlist_update_time > fetcher.DEFAULT_AUTOUPDATE_TIME
         else fetcher.DEFAULT_AUTOUPDATE_TIME
     )
-    log.info(f"Serverlist will autoupdate each {SERVERS_AUTOUPDATE_TIME} seconds")
+    log.info(f"Serverlist will autoupdate each {servers_autoupdate_time} seconds")
 
-    SETTINGS_AUTOSAVE_TIME = (
+    settings_autosave_time = (
         args.settings_autosave_time
         if args.settings_autosave_time
         and args.settings_autosave_time > settings.DEFAULT_AUTOSAVE_TIME
         else settings.DEFAULT_AUTOSAVE_TIME
     )
-    log.info(f"Settings will autosave each {SETTINGS_AUTOSAVE_TIME} seconds")
+    log.info(f"Settings will autosave each {settings_autosave_time} seconds")
 
     # Configuring instances of manager and fetcher to use our settings
     settings_manager = settings.SettingsManager(
-        autosave_time=SETTINGS_AUTOSAVE_TIME,
+        autosave_time=settings_autosave_time,
+        settings_file=args.settings_file or settings.DEFAULT_SETTINGS_FILE,
     )
     api_fetcher = fetcher.ApiFetcher(
-        autoupdate_time=SERVERS_AUTOUPDATE_TIME,
+        autoupdate_time=servers_autoupdate_time,
     )
 
     # Passing our pre-configured instances to bot
@@ -134,7 +138,7 @@ def main():
         settings_manager=settings_manager,
         api_fetcher=api_fetcher,
     )
-    bot.run(BOT_TOKEN)
+    bot.run(bot_token)
 
 
 if __name__ == "__main__":
