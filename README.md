@@ -28,11 +28,14 @@ improvements, but for the most - bot is already done and ready for daily usage.
 
 ## Installation:
 
-## From source:
+### From source:
 
 - `git clone https://github.com/moonburnt/notashark.git`
 - `cd notashark`
 - `python setup.py install`
+
+### From pypi:
+- `pip install notashark`
 
 ## Usage:
 
