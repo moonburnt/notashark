@@ -16,9 +16,9 @@
 
 # This module contains functions related to processing embeds
 
+from notashark import parts
 import logging
 from discord import utils, Embed, File
-from . import parts
 from datetime import datetime
 
 log = logging.getLogger(__name__)
@@ -30,7 +30,9 @@ def sanitize(data: str) -> str:
     return str(utils.escape_mentions(utils.escape_markdown(data)))
 
 
-def make_server_embed(data: parts.KagServerInfo) -> parts.EmbedStorage:
+def make_server_embed(
+    data: parts.KagServerInfo,
+) -> parts.EmbedStorage:
     """Build single server embed out of provided data"""
 
     # This is a nasty workaround to fix the discord's "clever" caching issue

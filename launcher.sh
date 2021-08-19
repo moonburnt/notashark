@@ -6,8 +6,6 @@
 NOTASHARK_DISCORD_KEY=""
 
 # Dont touch anything below, unless you know what you are doing
-botname="notashark"
-botpath="."
 scriptname=$(basename "$0")
 
 if [ -z "$NOTASHARK_DISCORD_KEY" ]; then
@@ -16,5 +14,4 @@ if [ -z "$NOTASHARK_DISCORD_KEY" ]; then
 fi
 export NOTASHARK_DISCORD_KEY
 
-chmod +x "$botpath/$botname"
-exec python "$botpath/$botname" --show-logs
+exec python -m "notashark" --show-logs

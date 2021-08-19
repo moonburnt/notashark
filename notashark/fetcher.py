@@ -16,6 +16,8 @@
 
 # This module contains everything related to fetching and processing data from api
 
+from notashark import parts
+from notashark.embeds import sanitize
 import requests
 import json
 from pykagapi import kag, kagstats
@@ -23,8 +25,6 @@ from threading import Lock
 from re import sub
 from time import sleep
 from io import BytesIO
-from . import parts
-from .embeds import sanitize
 import logging
 
 log = logging.getLogger(__name__)

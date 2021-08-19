@@ -16,8 +16,8 @@
 
 # This module contains discord bot itaswell as directly related functionality
 
+from notashark import fetcher, settings, embeds
 import discord
-from . import fetcher, settings, embeds
 from asyncio import sleep
 import logging
 import threading

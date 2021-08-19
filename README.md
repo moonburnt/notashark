@@ -28,9 +28,11 @@ improvements, but for the most - bot is already done and ready for daily usage.
 
 ## Installation:
 
+## From source:
+
 - `git clone https://github.com/moonburnt/notashark.git`
 - `cd notashark`
-- `pip install -r requirements.txt`
+- `python setup.py install`
 
 ## Usage:
 
@@ -41,16 +43,16 @@ cronjob and forget about. Below are examples of how to run bot without it.
 
 ### Basic:
 
-- Run `python ./notashark --show-logs --token=YOUR_TOKEN` (where YOUR_TOKEN is
+- Run `python -m notashark --show-logs --token=YOUR_TOKEN` (where YOUR_TOKEN is
 your discord bot's token)
 This will run bot in its default configuration, suitable for most needs.
 
 ### Recommended:
 
 - Set 'NOTASHARK_DISCORD_KEY' environment variable to your bot's discord token
-- `python ./notashark -h` to get list of all available launch flags
-- Run `python ./notashark` with whatever flags you like (there is no need to pass
-token as launch argument again - it will be fetched from envars).
+- `python -m notashark -h` to get list of all available launch flags
+- Run `python -m notashark` with whatever flags you like (there is no need to
+pass token as launch argument again - it will be fetched from envars).
 This is a bit more secure thus recommended way to use this bot.
 
 ## LICENSE:

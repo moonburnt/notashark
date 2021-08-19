@@ -16,7 +16,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see https://www.gnu.org/licenses/gpl-3.0.txt
 
-from src import fetcher, settings, discord_bot
+from notashark import fetcher, settings, discord_bot
 import argparse
 from os import environ
 from sys import exit
@@ -52,6 +52,12 @@ def main():
     file_handler.setFormatter(formatter)
     log.addHandler(file_handler)
 
+    # doing it these, because seeing critical errors still may be important
+    terminal_handler = logging.StreamHandler()
+    terminal_handler.setFormatter(formatter)
+    # terminal_handler.setLevel(logging.ERROR)
+    log.addHandler(terminal_handler)
+
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--token",
@@ -82,7 +88,10 @@ def main():
     ap.add_argument(
         "--show-logs",
         action="store_true",
-        help="Enable showcase of logs in terminal",
+        help=(
+            "Enable showcase of logs in terminal. "
+            "Else only critical errors will be shown"
+        ),
     )
     # TODO: maybe add arg to override log file location/name?
     ap.add_argument(
@@ -94,11 +103,8 @@ def main():
     if args.debug:
         log.setLevel(logging.DEBUG)
 
-    if args.show_logs:
-        terminal_handler = logging.StreamHandler()
-        terminal_handler.setFormatter(formatter)
-        # terminal_handler.setLevel(logging.ERROR)
-        log.addHandler(terminal_handler)
+    if not args.show_logs:
+        terminal_handler.setLevel(logging.CRITICAL)
 
     bot_token = args.token or environ.get("NOTASHARK_DISCORD_KEY", None)
     if not bot_token:
