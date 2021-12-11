@@ -207,7 +207,7 @@ class ApiFetcher:
             game_mode += " (modded)"
 
         capacity = f"{len(info['playerList'])}/{info['maxPlayers']}"
-        if info["spectatorPlayers"]:
+        if info["spectatorPlayers"] > 0: #old mods may give negative values
             capacity += f" ({info['spectatorPlayers']} spectating)"
 
         link = f"<kag://{info['IPv4Address']}:{info['port']}>"

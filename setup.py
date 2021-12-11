@@ -5,7 +5,7 @@ with open("README.md") as f:
 
 setup(
     name="notashark",
-    version="1.0.0",
+    version="1.0.1",
     description="notashark - discord bot for King Arthur's Gold",
     long_description=long_description,
     long_description_content_type="text/markdown",
