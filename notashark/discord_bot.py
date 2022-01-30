@@ -121,7 +121,10 @@ def make_bot(
         else:
             message = f"alone | {bot.command_prefix}help"
 
-        await bot.change_presence(activity=discord.Game(name=message))
+        try:
+            await bot.change_presence(activity=discord.Game(name=message))
+        except Exception as e:
+            log.warning(f"Unable to update bot's status: {e}")
 
     async def update_serverlists():
         """Update serverlists on all servers that have this feature enabled."""
@@ -133,37 +136,56 @@ def make_bot(
             ):
                 continue
 
+            chan_id = bot.settings_manager.storage[item]["serverlist_channel_id"]
+
             try:
                 # future reminder: serverlist_channel_id should always be int
-                channel = bot.get_channel(
-                    bot.settings_manager.storage[item]["serverlist_channel_id"]
-                )
+                channel = bot.get_channel(chan_id)
                 message = await channel.fetch_message(
                     bot.settings_manager.storage[item]["serverlist_message_id"]
                 )
             except AttributeError:
                 log.warning(
-                    "Unable to update serverlist on channel "
-                    f"{bot.settings_manager.storage[item]['serverlist_channel_id']}:"
+                    f"Unable to update serverlist on channel {chan_id}:"
                     f"guild {item} is unavailable"
                 )
                 continue
             except (discord.errors.NotFound, discord.errors.HTTPException):
                 log.debug("Unable to find existing message, configuring new one")
-                channel = bot.get_channel(
-                    bot.settings_manager.storage[item]["serverlist_channel_id"]
-                )
-                message = await channel.send("Gathering the data...")
-                log.debug(f"Sent placeholder serverlist msg to {item}/{channel.id}")
-                bot.settings_manager.storage[item]["serverlist_message_id"] = message.id
+                try:
+                    channel = bot.get_channel(chan_id)
+                    message = await channel.send("Gathering the data...")
+                except Exception as e:
+                    log.warning(
+                        f"Unable to create new stats message on {item}/{chan_id}: {e}"
+                    )
+                    continue
+                else:
+                    log.debug(f"Sent placeholder serverlist msg to {item}/{channel.id}")
+                    bot.settings_manager.storage[item][
+                        "serverlist_message_id"
+                    ] = message.id
             except Exception as e:
                 # this SHOULD NOT happen, kept there as "last resort"
-                log.error(f"Got exception while trying to edit serverlist message: {e}")
+                log.error(
+                    "Got exception while trying to edit serverlist message on"
+                    f"{item}/{chan_id}: {e}"
+                )
                 continue
 
             infobox = embeds.make_servers_embed(bot.api_fetcher.get_servers())
-            await message.edit(content=None, embed=infobox)
-            log.info(f"Successfully updated serverlist on {channel.id}/{message.id}")
+            # Attempting to deal with issues caused by discord api being unavailable.
+            try:
+                await message.edit(content=None, embed=infobox)
+            except Exception as e:
+                log.warning(
+                    f"Unable to edit serverlist on {item}/{chan_id}: {e}"
+                )
+                continue
+            else:
+                log.info(
+                    f"Successfully updated serverlist on {channel.id}/{message.id}"
+                )
 
     @bot.event
     async def on_ready():

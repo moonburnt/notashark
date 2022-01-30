@@ -207,7 +207,7 @@ class ApiFetcher:
             game_mode += " (modded)"
 
         capacity = f"{len(info['playerList'])}/{info['maxPlayers']}"
-        if info["spectatorPlayers"] > 0: #old mods may give negative values
+        if info["spectatorPlayers"] > 0:  # old mods may give negative values
             capacity += f" ({info['spectatorPlayers']} spectating)"
 
         link = f"<kag://{info['IPv4Address']}:{info['port']}>"
@@ -327,9 +327,6 @@ class ApiFetcher:
         log.debug(f"Leaderboard of scope {scope} contains: {leaderboard}")
         return leaderboard
 
-    # Stuff below is ugly as hell, but idk how to make it better
-    # I mean - I could keep the class route
-    # but it would re-introduce all the issues I tried to solve
     def autoupdate_routine(self):
         """Routine that update self.kag_servers with data from self.get_servers().
         Runs each self.autoupdate_time seconds.
