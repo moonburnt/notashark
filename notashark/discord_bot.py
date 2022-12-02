@@ -41,8 +41,14 @@ class Notashark(commands.Bot):
         self.settings_manager = settings_manager or settings.SettingsManager()
         self.api_fetcher = api_fetcher or fetcher.ApiFetcher()
         self.name = name
+
+        intents = discord.Intents.default()
+        intents.messages=True
+        intents.guilds=True
+
         super().__init__(
             command_prefix=command_prefix,
+            intents = intents,
         )
 
     def run(self, token, **kwargs):

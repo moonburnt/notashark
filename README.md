@@ -37,6 +37,15 @@ improvements, but for the most - bot is already done and ready for daily usage.
 ### From pypi:
 - `pip install notashark`
 
+## Discord permissions:
+
+**notashark require the following Privileged Gateway Intents to work**:
+- Message Content Intent
+
+You can configure them on developer portal (https://discord.com/developers/applications/),
+under Settings -> Bot -> Privileged Gateway Intents.
+
+
 ## Usage:
 
 Bot's development repository contain
