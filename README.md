@@ -14,10 +14,12 @@ to the game, including:
 
 You can see some usage screenshots in [screenshots](https://github.com/moonburnt/notashark/tree/master/screenshots).
 
+
 ## Development Status:
 
 This bot is considered to be feature-complete. There may be some small fixes and
 improvements, but for the most - bot is already done and ready for daily usage.
+
 
 ## Dependencies:
 
@@ -26,16 +28,18 @@ improvements, but for the most - bot is already done and ready for daily usage.
 - requests
 - [pykagapi](https://github.com/moonburnt/pykagapi)
 
+
 ## Installation:
 
 ### From source:
 
 - `git clone https://github.com/moonburnt/notashark.git`
 - `cd notashark`
-- `python setup.py install`
+- `pip install .`
 
 ### From pypi:
 - `pip install notashark`
+
 
 ## Discord permissions:
 
@@ -66,6 +70,12 @@ This will run bot in its default configuration, suitable for most needs.
 - Run `python -m notashark` with whatever flags you like (there is no need to
 pass token as launch argument again - it will be fetched from envars).
 This is a bit more secure thus recommended way to use this bot.
+
+### Via Docker:
+
+- Build docker container: `docker build .`
+- Run docker container: `docker run -e NOTASHARK_DISCORD_KEY={bot_token} {container_id}`
+
 
 ## LICENSE:
 
