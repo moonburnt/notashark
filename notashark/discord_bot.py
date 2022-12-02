@@ -43,12 +43,12 @@ class Notashark(commands.Bot):
         self.name = name
 
         intents = discord.Intents.default()
-        intents.messages=True
-        intents.guilds=True
+        intents.messages = True
+        intents.guilds = True
 
         super().__init__(
             command_prefix=command_prefix,
-            intents = intents,
+            intents=intents,
         )
 
     def run(self, token, **kwargs):
@@ -138,11 +138,15 @@ def make_bot(
             # avoiding entries without serverlist_channel_id being set
             if (
                 not bot.settings_manager.storage[item]
-                or not bot.settings_manager.storage[item]["serverlist_channel_id"]
+                or not bot.settings_manager.storage[item][
+                    "serverlist_channel_id"
+                ]
             ):
                 continue
 
-            chan_id = bot.settings_manager.storage[item]["serverlist_channel_id"]
+            chan_id = bot.settings_manager.storage[item][
+                "serverlist_channel_id"
+            ]
 
             try:
                 # future reminder: serverlist_channel_id should always be int
@@ -157,7 +161,9 @@ def make_bot(
                 )
                 continue
             except (discord.errors.NotFound, discord.errors.HTTPException):
-                log.debug("Unable to find existing message, configuring new one")
+                log.debug(
+                    "Unable to find existing message, configuring new one"
+                )
                 try:
                     channel = bot.get_channel(chan_id)
                     message = await channel.send("Gathering the data...")
@@ -167,7 +173,9 @@ def make_bot(
                     )
                     continue
                 else:
-                    log.debug(f"Sent placeholder serverlist msg to {item}/{channel.id}")
+                    log.debug(
+                        f"Sent placeholder serverlist msg to {item}/{channel.id}"
+                    )
                     bot.settings_manager.storage[item][
                         "serverlist_message_id"
                     ] = message.id
@@ -239,7 +247,9 @@ def make_bot(
             "servers\n`info *ip:port*` - to get detailed information "
             "of some specific server (including minimap)"
         )
-        log.info(f"{ctx.author} has asked for server info, but misspelled format")
+        log.info(
+            f"{ctx.author} has asked for server info, but misspelled format"
+        )
         return
 
     @server_group.command(name="list")
@@ -263,7 +273,9 @@ def make_bot(
                 "This command requires server address or ip:port. For example: "
                 f"`{bot.command_prefix}server info kag://138.201.55.232:10592`"
             )
-            log.info(f"{ctx.author} has asked for server info, but misspelled format")
+            log.info(
+                f"{ctx.author} has asked for server info, but misspelled format"
+            )
             return
 
         server_address = args[0]
@@ -282,7 +294,9 @@ def make_bot(
             file=data.attachment,
             embed=data.embed,
         )
-        log.info(f"Responded {ctx.author} with server info of {server_address}.")
+        log.info(
+            f"Responded {ctx.author} with server info of {server_address}."
+        )
 
     @bot.command(name="set")
     async def configure(ctx, *args):
@@ -291,7 +305,11 @@ def make_bot(
         """
         # ignoring invalid setters. I could rework this to group, but there are
         # no other configuration commands, thus there is no point rn #TODO
-        if len(args) >= 3 and (args[0] == "autoupdate") and (args[1] == "channel"):
+        if (
+            len(args) >= 3
+            and (args[0] == "autoupdate")
+            and (args[1] == "channel")
+        ):
             # ensuring that message's author is admin
             if not ctx.message.author.guild_permissions.administrator:
                 await ctx.channel.send(
@@ -308,7 +326,9 @@ def make_bot(
             bot.settings_manager.storage[str(ctx.guild.id)][
                 "serverlist_message_id"
             ] = None
-            await ctx.channel.send(f"Successfully set {cid} as channel for autoupdates")
+            await ctx.channel.send(
+                f"Successfully set {cid} as channel for autoupdates"
+            )
             log.info(
                 f"{ctx.author.id} tried to set {cid} as channel for "
                 f"autoupdates on {ctx.guild.id}/{ctx.channel.id}. Granted"
@@ -323,11 +343,15 @@ def make_bot(
                 f"For example: `{bot.command_prefix}kagstats bunnie`"
             )
             # #TODO: maybe make this follow error logging format?
-            log.info(f"{ctx.author} has asked for player info, but misspelled format")
+            log.info(
+                f"{ctx.author} has asked for player info, but misspelled format"
+            )
             return
 
         player = args[0]
-        infobox = embeds.make_kagstats_embed(bot.api_fetcher.get_kagstats(player))
+        infobox = embeds.make_kagstats_embed(
+            bot.api_fetcher.get_kagstats(player)
+        )
         await ctx.channel.send(content=None, embed=infobox)
         log.info(
             f"{ctx.author} has asked for player info of {player} on "
@@ -347,11 +371,15 @@ def make_bot(
             " - global builder\n - global knight\n - monthly archer\n"
             " - monthly builder\n - monthly knight\n"
         )
-        log.info(f"{ctx.author} has asked for leaderboard, but didnt specify type")
+        log.info(
+            f"{ctx.author} has asked for leaderboard, but didnt specify type"
+        )
 
     async def get_leaderboard(ctx, scope: str):
         """Get leaderboard of specified scope"""
-        infobox = embeds.make_leaderboard_embed(bot.api_fetcher.get_leaderboard(scope))
+        infobox = embeds.make_leaderboard_embed(
+            bot.api_fetcher.get_leaderboard(scope)
+        )
         await ctx.channel.send(content=None, embed=infobox)
         log.info(
             f"{ctx.author} has asked for {scope} leaderboard on "

@@ -237,7 +237,8 @@ def make_leaderboard_embed(data: parts.Leaderboard) -> Embed:
     embed.add_field(
         name="Overview:",
         value=(
-            f"**Leaderboard:** {data.description}\n" f"**KAG Stats URL:** <{data.url}>"
+            f"**Leaderboard:** {data.description}\n"
+            f"**KAG Stats URL:** <{data.url}>"
         ),
         inline=False,
     )

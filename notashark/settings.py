@@ -99,6 +99,10 @@ class SettingsManager:
             try:
                 self.save_settings()
             except Exception as e:
-                log.critical(f"Unable to save settings to {self.settings_file}: {e}")
+                log.critical(
+                    f"Unable to save settings to {self.settings_file}: {e}"
+                )
             else:
-                log.info(f"Successfully saved settings into {self.settings_file}")
+                log.info(
+                    f"Successfully saved settings into {self.settings_file}"
+                )

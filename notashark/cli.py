@@ -64,7 +64,9 @@ def main():
         help="Use this to supply your token to bot, in case envars arent an option",
     )
     ap.add_argument(
-        "--debug", action="store_true", help="Add debug messages to bot's output"
+        "--debug",
+        action="store_true",
+        help="Add debug messages to bot's output",
     )
     ap.add_argument(
         "--serverlist-update-time",
@@ -120,7 +122,9 @@ def main():
         and args.serverlist_update_time > fetcher.DEFAULT_AUTOUPDATE_TIME
         else fetcher.DEFAULT_AUTOUPDATE_TIME
     )
-    log.info(f"Serverlist will autoupdate each {servers_autoupdate_time} seconds")
+    log.info(
+        f"Serverlist will autoupdate each {servers_autoupdate_time} seconds"
+    )
 
     settings_autosave_time = (
         args.settings_autosave_time

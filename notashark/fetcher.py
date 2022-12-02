@@ -191,7 +191,9 @@ class ApiFetcher:
                 if item["ip"] == info["IPv4Address"]:
                     country_prefix = item["country"].lower()
                     country_name = item["name"]
-                    log.debug(f"Found {item['ip']} in self.known_server_countries")
+                    log.debug(
+                        f"Found {item['ip']} in self.known_server_countries"
+                    )
                     break
 
         if not country_prefix:
@@ -200,7 +202,9 @@ class ApiFetcher:
                 self.known_server_countries.append(country)
             country_prefix = country["country"].lower()
             country_name = country["name"]
-            log.debug(f"Added {info['IPv4Address']} ({country_name}) into storage")
+            log.debug(
+                f"Added {info['IPv4Address']} ({country_name}) into storage"
+            )
 
         game_mode = info["gameMode"]
         if info["usingMods"]:
@@ -293,7 +297,9 @@ class ApiFetcher:
             top_weapons=top_weapons,
         )
 
-        log.debug(f"{player} returned following kagstats profile: {profile_info}")
+        log.debug(
+            f"{player} returned following kagstats profile: {profile_info}"
+        )
         return profile_info
 
     def get_leaderboard(self, scope: str) -> parts.Leaderboard:
@@ -314,7 +320,8 @@ class ApiFetcher:
                     clantag=sanitize(item["player"]["clantag"]),
                     kills=item[lb["kills_slug"]],
                     deaths=item[lb["deaths_slug"]],
-                    kdr="%.2f" % (item[lb["kills_slug"]] / item[lb["deaths_slug"]]),
+                    kdr="%.2f"
+                    % (item[lb["kills_slug"]] / item[lb["deaths_slug"]]),
                 )
             )
 
