@@ -18,7 +18,6 @@
 
 from notashark import fetcher, settings, embeds
 import discord
-from asyncio import sleep
 import logging
 import threading
 from sys import exit
@@ -44,6 +43,7 @@ class Notashark(commands.Bot):
 
         intents = discord.Intents.default()
         intents.messages = True
+        intents.message_content = True
         intents.guilds = True
 
         super().__init__(
