@@ -22,25 +22,25 @@ from os import environ
 from sys import exit
 import logging
 from logging.handlers import RotatingFileHandler
+from typing import List
 
 log = logging.getLogger()
 
+def configure_loggers(
+    loggers: List[logging.Logger],
+    level:int=logging.INFO,
+    show_terminal_info:bool = False,
+):
+    """Configure provided loggers to follow the same format"""
 
-def main():
-    # looks like overriding logger's own level isnt the best idea, since it also make
-    # logs below its level unaccessible to handlers, regardless of their settings.
-    # Correct approach is to set logger itself to some sane level and then toggle
-    # things on per-handler basis
-    log.setLevel(logging.INFO)
-
-    # Formatter for both handlers
+    # Formatter for all handlers
     formatter = logging.Formatter(
         fmt="[%(asctime)s][%(name)s][%(levelname)s] %(message)s",
         datefmt="%d.%m.%y %H:%M:%S",
     )
 
-    # this is a rotating handler that automatically ensures that log wont grow beyond
-    # certain size and make backups of older logs. Really cool thing, may tweak it l8r
+    # This handler automatically ensures that log won't grow beyond certain size
+    # and make backups of older logs. Really cool thing, may tweak it l8r
     file_handler = RotatingFileHandler(
         "notashark.log",
         mode="a",
@@ -50,14 +50,22 @@ def main():
         delay=0,
     )
     file_handler.setFormatter(formatter)
-    log.addHandler(file_handler)
 
-    # doing it these, because seeing critical errors still may be important
+    # Doing it there, because seeing critical errors still may be important
     terminal_handler = logging.StreamHandler()
     terminal_handler.setFormatter(formatter)
     # terminal_handler.setLevel(logging.ERROR)
-    log.addHandler(terminal_handler)
 
+    if not show_terminal_info:
+        terminal_handler.setLevel(logging.CRITICAL)
+
+    for logger in loggers:
+        logger.addHandler(file_handler)
+        logger.addHandler(terminal_handler)
+        logger.setLevel(level)
+
+
+def main():
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--token",
@@ -102,11 +110,15 @@ def main():
     )
     args = ap.parse_args()
 
-    if args.debug:
-        log.setLevel(logging.DEBUG)
-
-    if not args.show_logs:
-        terminal_handler.setLevel(logging.CRITICAL)
+    configure_loggers(
+        loggers = [
+            log,
+            logging.getLogger('discord'),
+            logging.getLogger('discord.http'),
+        ],
+        level = logging.DEBUG if args.debug else logging.INFO,
+        show_terminal_info = args.show_logs,
+    )
 
     bot_token = args.token or environ.get("NOTASHARK_DISCORD_KEY", None)
     if not bot_token:

@@ -69,7 +69,9 @@ class Notashark(commands.Bot):
             sat.start()
 
             log.debug(f"Launching {self.name}")
-            super().run(token, **kwargs)
+
+            # Since we've manually altered handlers in cli, disable default ones
+            super().run(token, log_handler=None, **kwargs)
         except discord.errors.LoginFailure:
             log.critical("Invalid bot token! Please double-check and try again")
             exit(1)
