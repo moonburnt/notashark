@@ -19,7 +19,7 @@
 from notashark import parts
 import logging
 from discord import utils, Embed, File
-from datetime import datetime
+from discord.utils import utcnow
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def make_server_embed(
     # Basically - if filename stays the same, sometimes discord decides to show
     # the older image instead of never. Which cause minimap to never update
     # This will crash if minimap doesnt exist #TODO
-    timestamp = datetime.utcnow()
+    timestamp = utcnow()
     filename = f"{timestamp.timestamp()}_minimap.png"
     minimap = File(data.minimap, filename=filename)
 
@@ -95,7 +95,7 @@ def make_server_embed(
 def make_servers_embed(data: parts.KagServers) -> Embed:
     """Build embed with summary about all populated kag servers"""
 
-    embed = Embed(timestamp=datetime.utcnow())
+    embed = Embed(timestamp=utcnow())
     embed.colour = 0x3498DB
     embed_title = "KAG Server List"
     embed_overview = (
@@ -161,7 +161,7 @@ def make_kagstats_embed(data: parts.KagstatsProfile) -> Embed:
         weapon_info = f"**{item.weapon}**: {item.kills} kills\n"
         top_weapons += weapon_info
 
-    embed = Embed(timestamp=datetime.utcnow())
+    embed = Embed(timestamp=utcnow())
     embed.colour = 0x3498DB
     # if user has no avatar set - this wont do anything
     embed.set_thumbnail(url=data.avatar)
@@ -231,7 +231,7 @@ def make_leaderboard_embed(data: parts.Leaderboard) -> Embed:
         item.position = position
         players.append(item)
 
-    embed = Embed(timestamp=datetime.utcnow())
+    embed = Embed(timestamp=utcnow())
     embed.colour = 0x3498DB
     embed.title = "KAG Stats: Leaderboard"
     embed.add_field(
@@ -263,7 +263,7 @@ def make_leaderboard_embed(data: parts.Leaderboard) -> Embed:
 def make_about_embed(name: str = "notashark", prefix: str = "!") -> Embed:
     """Build embed with general info about this bot"""
 
-    embed = Embed(timestamp=datetime.utcnow())
+    embed = Embed(timestamp=utcnow())
     embed.colour = 0x3498DB
     embed.title = "About Bot"
     embed.add_field(
