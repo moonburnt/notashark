@@ -1,46 +1,32 @@
-[project]
+[tool.poetry]
 name = "notashark"
-version = "1.1.1"
+version = "1.2"
 description = "notashark - a discord bot for King Arthur's Gold"
 readme = "README.md"
-authors = [
-    {name = "moonburnt", email = "moonburnt@disroot.org"},
-]
-license = {file = "LICENSE"}
+authors = ["moonburnt <moonburnt@disroot.org>"]
+license = "LICENSE.md"
+homepage = "https://github.com/moonburnt/notashark"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
 
-requires-python = ">=3.8"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-dependencies = [
-    "discord.py==2.1.0",
-    "requests==2.28.1",
-    "pykagapi==0.2.1",
-]
-
-
-[project.urls]
-homepage = "https://github.com/moonburnt/notashark"
-
-
-[project.scripts]
+[tool.poetry.scripts]
 notashark = "notashark:cli.main"
 
+[tool.poetry.dependencies]
+python = "^3.10"
+discord-py = "^2.3.2"
+requests = "^2.31.0"
+pykagapi = "^0.2.1"
 
-[project.optional-dependencies]
-dev = [
-    "black==22.10.0",
-]
-
-
-[tool.setuptools]
-py-modules = [
-    "notashark",
-]
-
+[tool.poetry.group.dev.dependencies]
+black = "^23.9.1"
 
 [tool.black]
 line-length = 80

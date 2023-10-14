@@ -23,7 +23,7 @@ improvements, but for the most - bot is already done and ready for daily usage.
 
 ## Dependencies:
 
-- python 3.8 (may work on previous versions)
+- python 3.10 (may work on previous versions)
 - discord.py
 - requests
 - [pykagapi](https://github.com/moonburnt/pykagapi)
@@ -33,9 +33,10 @@ improvements, but for the most - bot is already done and ready for daily usage.
 
 ### From source:
 
-- `git clone https://github.com/moonburnt/notashark.git`
-- `cd notashark`
-- `pip install .`
+- Install [poetry](https://python-poetry.org/docs/#installation)
+- Clone this repo: `git clone https://github.com/moonburnt/notashark.git`
+- Enter project's directory: `cd notashark`
+- `poetry install`
 
 ### From pypi:
 - `pip install notashark`
