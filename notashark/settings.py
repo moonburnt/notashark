@@ -16,63 +16,69 @@
 
 # This module contains everything related to working with per-guild settings
 
+import aiofiles
+import asyncio
 import logging
 import json
 from os.path import join
-from time import sleep
+from typing import Optional
 
 log = logging.getLogger(__name__)
-
-DEFAULT_AUTOSAVE_TIME = 300
-DEFAULT_SETTINGS_FILE = join(".", "settings.json")
 
 
 class SettingsManager:
     """Everything related to settings loading, updating and saving"""
 
-    def __init__(self, settings_file: str = None, autosave_time: int = None):
-        self.settings_file = settings_file or DEFAULT_SETTINGS_FILE
-        self.autosave_time = autosave_time or DEFAULT_AUTOSAVE_TIME
-        self.storage = {}
-        self.load_settings()
+    def __init__(self, settings_path: str = "settings.json"):
+        self._settings_path = settings_path
+        self._storage = {}
 
-    def get_settings(self, filepath: str = None) -> dict:
-        """Get settings from provided file"""
-        filepath = filepath or self.settings_file
-        with open(filepath, "r") as j:
-            data = json.load(j)
-        log.debug(f"Fetched following settings from {filepath}: {data}")
-        return data
+    @property
+    def storage(self) -> dict:
+        return self._storage
 
-    def load_settings(self, filepath: str = None):
-        """Load settings into self.storage"""
+    @property
+    def settings_path(self) -> str:
+        return self._settings_path
+
+    async def load_settings(self):
+        """Load settings into storage"""
+
         try:
-            settings = self.get_settings(filepath)
+            async with aiofiles.open(self.settings_path, "r") as f:
+                raw = await f.read()
+                settings = json.loads(raw)
         except Exception as e:
-            log.error(f"Unable to load settings from {filepath}: {e}")
+            log.error(f"Unable to load settings from {self.settings_path}: {e}")
         else:
-            self.storage = settings
+            self._storage = settings
 
-    def save_settings(self, filepath: str = None):
-        """Save self.storage into json file"""
-        filepath = filepath or self.settings_file
-        jdata = json.dumps(self.storage)
-        with open(filepath, "w") as f:
-            f.write(jdata)
+    async def save_settings(self):
+        """Save storage into settings file"""
 
-        log.debug(f"Successfully saved settings to {filepath}")
+        data = json.dumps(self.storage)
+
+        async with aiofiles.open(self.settings_path, "w") as f:
+            await f.write(data)
+
+        log.debug(f"Successfully saved settings to {self.settings_path}")
 
     def add_entry(
         self,
-        guild_id: str,
-        serverlist_channel_id: str = None,
-        serverlist_message_id: str = None,
-    ):
+        guild_id: int | str,
+        serverlist_channel_id: Optional[str] = None,
+        serverlist_message_id: Optional[str] = None,
+    ) -> bool:
         """Add guild_id to self.storage, in case its not there"""
+
         # better safe than sorry
         guild_id = str(guild_id)
 
-        if guild_id not in self.storage:
+        if guild_id in self.storage:
+            log.debug(f"{guild_id} is already in storage, no need to add again")
+            return False
+
+        else:
             log.debug(f"Couldnt find {guild_id} in settings storage, adding")
             x = {}
             # id of serverlist channel
@@ -80,29 +86,33 @@ class SettingsManager:
             # id of message that should be edited
             x["serverlist_message_id"] = serverlist_message_id
             # idk if this needs more settings
-            self.storage[guild_id] = x
+            self._storage[guild_id] = x
             # Im not sure if this may go into race condition situation
             # if called for multiple servers at once. Hopefully not
             log.debug(f"Now settings storage looks like: {self.storage}")
-            return
 
-        log.debug(f"{guild_id} is already in storage, no need to add again")
+            return True
 
-    def autosave_routine(self):
-        """Routine that runs self.save_settings() each self.autosave_time seconds.
-        Intended to be ran in separate thread on application's launch
-        """
+    async def autosave_task(self, autosave_time: int = 300):
+        """Run self.save_settings() in a loop"""
 
         while True:
             log.debug(f"Waiting {self.autosave_time} seconds before next save")
-            sleep(self.autosave_time)
+            await asyncio.sleep(self.autosave_time)
+
             try:
-                self.save_settings()
+                await self.save_settings()
             except Exception as e:
                 log.critical(
-                    f"Unable to save settings to {self.settings_file}: {e}"
+                    f"Unable to save settings to {self.settings_path}: {e}"
                 )
             else:
                 log.info(
-                    f"Successfully saved settings into {self.settings_file}"
+                    f"Successfully saved settings into {self.settings_path}"
                 )
+
+    # async def run(self):
+    #     """Run the whole thing altogether"""
+
+    #     await self.load_settings()
+    #     await self.autosave_task()

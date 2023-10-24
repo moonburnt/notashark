@@ -24,6 +24,7 @@ python = "^3.10"
 discord-py = "^2.3.2"
 requests = "^2.31.0"
 pykagapi = "^0.4"
+aiofiles = "^23.2.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.1"
