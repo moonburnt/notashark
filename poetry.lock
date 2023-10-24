@@ -566,17 +566,18 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4)", "pytest-co
 
 [[package]]
 name = "pykagapi"
-version = "0.2.1"
+version = "0.4.0"
 description = "pykagapi - python wrapper for King Arthur's Gold-related APIs"
 optional = false
-python-versions = "*"
+python-versions = ">=3.10,<4.0"
 files = [
-    {file = "pykagapi-0.2.1-py3-none-any.whl", hash = "sha256:e8b8a6653a911aff2373efd91c44535582d50d3a97ebb0af7364d6292ee8c1c4"},
-    {file = "pykagapi-0.2.1.tar.gz", hash = "sha256:2da8ad6fe162661a7f8d076d00d646fb40ce2f4bb91e8540e1c7693adbe229c6"},
+    {file = "pykagapi-0.4.0-py3-none-any.whl", hash = "sha256:074d4d7aacdea5abe51f251538a58a67f05d1961c9d8b07963bf84d117f6e9cd"},
+    {file = "pykagapi-0.4.0.tar.gz", hash = "sha256:f613b10077576b619746f0ceb2abcc1510061de99d413263dc5da83b7f50429d"},
 ]
 
 [package.dependencies]
-requests = ">=2.25.1"
+aiohttp = ">=3.8.6,<4.0.0"
+requests = ">=2.31.0,<3.0.0"
 
 [[package]]
 name = "requests"
@@ -728,4 +729,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "128b660644c51fc1022326f770dc0ccdf2ff6a2825dd71eeef7262673bbbefcb"
+content-hash = "9e8be386dd1d1c2c6e4a405611d84f7187897a26d007c64cfa452252548d1df0"

@@ -39,6 +39,7 @@ improvements, but for the most - bot is already done and ready for daily usage.
 - `poetry install`
 
 ### From pypi:
+
 - `pip install notashark`
 
 

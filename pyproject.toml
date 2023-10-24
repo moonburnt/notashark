@@ -23,7 +23,7 @@ notashark = "notashark:cli.main"
 python = "^3.10"
 discord-py = "^2.3.2"
 requests = "^2.31.0"
-pykagapi = "^0.2.1"
+pykagapi = "^0.4"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.1"
